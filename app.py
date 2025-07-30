@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import re
 
 st.set_page_config(layout="wide")
 st.title("CSV Data Viewer and Filter")
@@ -33,6 +34,54 @@ with tab1:
     st.sidebar.title("Filters")
     df_filtered = st.session_state.df.copy()
 
+    # --- Keyword Filter ---
+    # Automatically find a description column to search
+    description_col = None
+    possible_desc_cols = ['Description', 'Item with specs', 'Item with Specs', 'Item Name', 'Product']
+    for col_name in possible_desc_cols:
+        if col_name in df_filtered.columns:
+            description_col = col_name
+            break
+    
+    if description_col:
+        st.sidebar.subheader("Keyword Filter")
+        
+        # Define keyword patterns, correctly handling any number of digits
+        keyword_patterns = [
+            r'\d+\s*TB',  # e.g., "1TB", "16 TB"
+            r'\d+\s*GB',  # e.g., "8GB", "256 GB"
+            r'\d+T',      # e.g., "1T"
+            r'\d+G',      # e.g., "8G"
+            'MBP',
+            'MBA',
+            'STUDIO',
+            'MINI'
+        ]
+        
+        # Extract all matching keywords from the identified description column
+        all_matches = []
+        descriptions = df_filtered[description_col].astype(str)
+        for pattern in keyword_patterns:
+            try:
+                matches = descriptions.str.findall(pattern, flags=re.IGNORECASE).explode().dropna()
+                all_matches.extend(matches)
+            except Exception:
+                # Ignore columns that may not be compatible with string operations
+                continue
+        
+        unique_matches = sorted(list(set(all_matches)), key=str.casefold)
+
+        if unique_matches:
+            selected_match = st.sidebar.selectbox(
+                f"Filter by keyword in '{description_col}'",
+                options=["All"] + unique_matches
+            )
+            if selected_match != "All":
+                # Use re.escape to safely handle special characters in the search term
+                df_filtered = df_filtered[descriptions.str.contains(re.escape(selected_match), case=False, na=False)]
+
+    # --- Column Filters ---
+    st.sidebar.subheader("Column Filters")
     # Create filters for each column
     for column in df_filtered.columns:
         # For object/string columns, create a multiselect filter
