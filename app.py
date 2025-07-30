@@ -55,15 +55,17 @@ with tab1:
 
     for i, column in enumerate(columns_to_filter):
         with filter_cols[i]:
+            # Get unique values from the *currently filtered* dataframe
+            unique_values = df_filtered[column].dropna().unique()
+
             if column == description_col:
-                # Special handling for the description column to include keyword filter
+                # Special handling for the description column
                 label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
                 filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
 
                 if filter_mode == "None":
                     df_filtered = df_filtered[df_filtered[column].isnull()]
                 elif filter_mode == "Custom":
-                    # Define keyword patterns
                     keyword_patterns = [
                         r'\d+\s*TB', r'\d+\s*GB', r'\d+T', r'\d+G',
                         'MBP', 'MBA', 'STUDIO', 'MINI'
@@ -90,7 +92,6 @@ with tab1:
             
             elif df_filtered[column].dtype == 'object':
                 # Standard filter for other object columns
-                unique_values = df_filtered[column].dropna().unique()
                 label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
                 filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
 
