@@ -44,7 +44,7 @@ with tab1:
             break
     
     if description_col:
-        st.sidebar.subheader("Keyword Filter")
+        # This subheader is no longer needed as the filter is moving to the main panel
         
         # Define keyword patterns, correctly handling any number of digits
         keyword_patterns = [
@@ -72,8 +72,9 @@ with tab1:
         unique_matches = sorted(list(set(all_matches)), key=str.casefold)
 
         if unique_matches:
-            selected_match = st.sidebar.selectbox(
-                f"Filter by keyword in '{description_col}'",
+            # Place the keyword filter in the main tab area, not the sidebar
+            selected_match = st.selectbox(
+                f"Filter by Keyword in '{description_col}'",
                 options=["All"] + unique_matches
             )
             if selected_match != "All":
@@ -100,6 +101,8 @@ with tab1:
                 df_filtered = df_filtered[(df_filtered[column] >= selected_range[0]) & (df_filtered[column] <= selected_range[1])]
 
     # --- Display Filtered Data ---
+    # The keyword filter is now part of the main display, so it's already been rendered.
+    # We just need to display the final filtered dataframe.
     st.header("Filtered Data")
     st.dataframe(df_filtered)
 
