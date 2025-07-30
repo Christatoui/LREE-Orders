@@ -95,14 +95,10 @@ with tab1:
             # For object/string columns, create a multiselect filter
             if df_filtered[column].dtype == 'object':
                 unique_values = df_filtered[column].unique()
-                # Use a text input for filtering large numbers of unique values
-                if len(unique_values) > 50:
-                     search_term = st.text_input(f"Search {column}")
-                     if search_term:
-                         df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
-                else:
-                    selected_values = st.multiselect(f"Filter by {column}", unique_values, default=unique_values)
-                    df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
+                # Use a single-select box for a more compact UI
+                selected_value = st.selectbox(f"By {column}", ["All"] + list(unique_values))
+                if selected_value != "All":
+                    df_filtered = df_filtered[df_filtered[column] == selected_value]
 
             # For numerical columns, create a range slider
             elif pd.api.types.is_numeric_dtype(df_filtered[column]):
