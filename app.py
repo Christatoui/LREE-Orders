@@ -25,30 +25,36 @@ else:
     st.info("Please upload a CSV file using the sidebar to get started.")
     st.stop()
 
-# --- Filtering ---
-st.sidebar.title("Filters")
-df_filtered = st.session_state.df.copy()
+# Create tabs
+tab1, tab2 = st.tabs(["Filtered View", "Data Sheet"])
 
-# Create filters for each column
-for column in df_filtered.columns:
-    # For object/string columns, create a multiselect filter
-    if df_filtered[column].dtype == 'object':
-        unique_values = df_filtered[column].unique()
-        selected_values = st.sidebar.multiselect(f"Filter by {column}", unique_values, default=unique_values)
-        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
+with tab1:
+    # --- Filtering ---
+    st.sidebar.title("Filters")
+    df_filtered = st.session_state.df.copy()
 
-    # For numerical columns, create a range slider
-    elif pd.api.types.is_numeric_dtype(df_filtered[column]):
-        min_val = float(df_filtered[column].min())
-        max_val = float(df_filtered[column].max())
-        # Add a check to ensure min_val is not greater than max_val
-        if min_val < max_val:
-            selected_range = st.sidebar.slider(f"Filter by {column}", min_val, max_val, (min_val, max_val))
-            df_filtered = df_filtered[(df_filtered[column] >= selected_range[0]) & (df_filtered[column] <= selected_range[1])]
+    # Create filters for each column
+    for column in df_filtered.columns:
+        # For object/string columns, create a multiselect filter
+        if df_filtered[column].dtype == 'object':
+            unique_values = df_filtered[column].unique()
+            selected_values = st.sidebar.multiselect(f"Filter by {column}", unique_values, default=unique_values)
+            df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
 
-# --- Display Data ---
-st.header("Filtered Data")
-st.dataframe(df_filtered)
+        # For numerical columns, create a range slider
+        elif pd.api.types.is_numeric_dtype(df_filtered[column]):
+            min_val = float(df_filtered[column].min())
+            max_val = float(df_filtered[column].max())
+            # Add a check to ensure min_val is not greater than max_val
+            if min_val < max_val:
+                selected_range = st.sidebar.slider(f"Filter by {column}", min_val, max_val, (min_val, max_val))
+                df_filtered = df_filtered[(df_filtered[column] >= selected_range[0]) & (df_filtered[column] <= selected_range[1])]
 
-st.header("Original Data")
-st.dataframe(st.session_state.df)
+    # --- Display Filtered Data ---
+    st.header("Filtered Data")
+    st.dataframe(df_filtered)
+
+with tab2:
+    # --- Display Original Data ---
+    st.header("Original Data")
+    st.dataframe(st.session_state.df)
