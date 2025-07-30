@@ -92,6 +92,9 @@ with tab1:
     filter_cols = st.columns(len(df_filtered.columns))
 
     for i, column in enumerate(df_filtered.columns):
+        # Skip creating a filter for the 'ATC' column as it has a dedicated sorter
+        if column == 'ATC':
+            continue
         with filter_cols[i]:
             # For object/string columns, create a multiselect filter
             if df_filtered[column].dtype == 'object':
