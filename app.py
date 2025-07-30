@@ -101,8 +101,14 @@ with tab1:
                 if filter_mode == "None":
                     df_filtered = df_filtered[df_filtered[column].isnull()]
                 elif filter_mode == "Custom":
-                    selected_values = st.multiselect("Select Values", list(unique_values), key=f"multiselect_{column}")
-                    if selected_values:
+                    options = ["--"] + list(unique_values)
+                    selected_values = st.multiselect("Select Values", options, default=["--"], key=f"multiselect_{column}")
+                    
+                    # Filter out the placeholder if other values are selected
+                    if len(selected_values) > 1 and "--" in selected_values:
+                        selected_values.remove("--")
+                    
+                    if selected_values and selected_values != ["--"]:
                         df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
 
             # For numerical columns, create a range slider
