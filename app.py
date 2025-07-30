@@ -94,11 +94,15 @@ with tab1:
         with filter_cols[i]:
             # For object/string columns, create a multiselect filter
             if df_filtered[column].dtype == 'object':
-                unique_values = df_filtered[column].unique()
-                # Use a single-select box for a more compact UI
-                selected_value = st.selectbox(f"By {column}", ["All"] + list(unique_values))
-                if selected_value != "All":
-                    df_filtered = df_filtered[df_filtered[column] == selected_value]
+                unique_values = df_filtered[column].dropna().unique()
+                filter_mode = st.selectbox(f"By {column}", ["All", "None", "Custom"], key=f"mode_{column}")
+
+                if filter_mode == "None":
+                    df_filtered = df_filtered[df_filtered[column].isnull()]
+                elif filter_mode == "Custom":
+                    selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
+                    if selected_values:
+                        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
 
             # For numerical columns, create a range slider
             elif pd.api.types.is_numeric_dtype(df_filtered[column]):
