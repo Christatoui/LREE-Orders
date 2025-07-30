@@ -13,6 +13,9 @@ if uploaded_file is not None:
     # Read the uploaded CSV into a pandas DataFrame
     try:
         df = pd.read_csv(uploaded_file)
+        # Remove unnamed index columns that can be added by spreadsheet software
+        if any(col.startswith('Unnamed:') for col in df.columns):
+            df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         st.session_state.df = df
         st.sidebar.success("File uploaded and processed successfully!")
     except Exception as e:
