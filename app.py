@@ -19,9 +19,6 @@ st.sidebar.title("Upload Data")
 uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
 
 # --- Main App Logic ---
-if 'df' not in st.session_state:
-    st.session_state.df = pd.DataFrame()
-
 if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
@@ -32,8 +29,7 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
         st.stop()
-
-if st.session_state.df.empty:
+else:
     st.info("Please upload a CSV file using the sidebar to get started.")
     st.stop()
 
@@ -43,11 +39,10 @@ tab1, tab2 = st.tabs(["Filtered View", "Data Sheet"])
 with tab1:
     df_filtered = st.session_state.df.copy()
 
+    # --- Column Filters ---
     st.header("Column Filters")
 
-    # --- Hybrid Cascading Filter Logic ---
-    
-    # Automatically find a description column
+    # Automatically find a description column to search
     description_col = None
     possible_desc_cols = ['Description', 'Item with specs', 'Item with Specs', 'Item Name', 'Product']
     for col_name in possible_desc_cols:
@@ -56,32 +51,27 @@ with tab1:
             break
 
     columns_to_filter = [col for col in df_filtered.columns if col != 'ATC']
-    filter_cols = st.columns(len(columns_to_filter))
-
-    # This dataframe will be updated sequentially by the custom filters
-    df_for_custom_options = st.session_state.df.copy()
+    filter_cols = st.columns(len(df_filtered.columns))
 
     for i, column in enumerate(columns_to_filter):
         with filter_cols[i]:
-            # Primary filters are always based on the original full dataset
-            primary_unique_values = st.session_state.df[column].dropna().unique()
-            
-            label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
-            filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
+            # Get unique values from the *currently filtered* dataframe
+            unique_values = df_filtered[column].dropna().unique()
 
-            if filter_mode == "None":
-                df_filtered = df_filtered[df_filtered[column].isnull()]
-            
-            elif filter_mode == "Custom":
-                # --- Secondary Cascading Filter ---
-                # Options for this multiselect are based on the data filtered by *previous* custom selections
-                cascading_unique_values = df_for_custom_options[column].dropna().unique()
+            if column == description_col:
+                # Special handling for the description column
+                label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
+                filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
 
-                if column == description_col:
-                    # Special keyword filter for the description column
-                    keyword_patterns = [r'\d+\s*TB', r'\d+\s*GB', r'\d+T', r'\d+G', 'MBP', 'MBA', 'STUDIO', 'MINI']
+                if filter_mode == "None":
+                    df_filtered = df_filtered[df_filtered[column].isnull()]
+                elif filter_mode == "Custom":
+                    keyword_patterns = [
+                        r'\d+\s*TB', r'\d+\s*GB', r'\d+T', r'\d+G',
+                        'MBP', 'MBA', 'STUDIO', 'MINI'
+                    ]
                     all_matches = []
-                    descriptions = df_for_custom_options[description_col].astype(str)
+                    descriptions = df_filtered[description_col].astype(str)
                     for pattern in keyword_patterns:
                         try:
                             matches = descriptions.str.findall(pattern, flags=re.IGNORECASE).explode().dropna()
@@ -89,29 +79,43 @@ with tab1:
                         except Exception:
                             continue
                     
-                    cascading_unique_values = sorted(list(set(all_matches)), key=str.casefold)
-                    
-                    selected_values = st.multiselect("Select Keywords", list(cascading_unique_values), key=f"multiselect_{column}")
-                    if selected_values:
-                        # Build a regex pattern to find any of the selected keywords
-                        pattern = '|'.join([re.escape(val) for val in selected_values])
-                        df_filtered = df_filtered[df_filtered[column].str.contains(pattern, case=False, na=False)]
-                        # Update the dataframe for the next custom filter in the sequence
-                        df_for_custom_options = df_for_custom_options[df_for_custom_options[column].str.contains(pattern, case=False, na=False)]
+                    unique_matches = sorted(list(set(all_matches)), key=str.casefold)
 
-                else: # Standard multiselect for other columns
-                    selected_values = st.multiselect("Select Values", list(cascading_unique_values), key=f"multiselect_{column}")
+                    if unique_matches:
+                        selected_match = st.selectbox(
+                            "Filter by Keyword",
+                            options=["All"] + unique_matches,
+                            key=f"keyword_multiselect_{column}"
+                        )
+                        if selected_match != "All":
+                            df_filtered = df_filtered[descriptions.str.contains(re.escape(selected_match), case=False, na=False)]
+            
+            elif df_filtered[column].dtype == 'object':
+                # Standard filter for other object columns
+                label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
+                filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
+
+                if filter_mode == "None":
+                    df_filtered = df_filtered[df_filtered[column].isnull()]
+                elif filter_mode == "Custom":
+                    selected_values = st.multiselect("Select Values", list(unique_values), key=f"multiselect_{column}")
                     if selected_values:
                         df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
-                        # Update the dataframe for the next custom filter in the sequence
-                        df_for_custom_options = df_for_custom_options[df_for_custom_options[column].isin(selected_values)]
+            
+            elif pd.api.types.is_numeric_dtype(df_filtered[column]):
+                # Filter for numerical columns
+                min_val, max_val = float(df_filtered[column].min()), float(df_filtered[column].max())
+                if min_val < max_val:
+                    selected_range = st.slider(f"Filter by {column}", min_val, max_val, (min_val, max_val))
+                    df_filtered = df_filtered[(df_filtered[column] >= selected_range[0]) & (df_filtered[column] <= selected_range[1])]
 
-    # --- ATC Sorter (applied after all filters) ---
+    # Add the ATC sorter as the last filter
     if 'ATC' in df_filtered.columns:
-        sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
-        if sort_direction != "--":
-            ascending = sort_direction == "⬆️"
-            df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
+        with filter_cols[len(columns_to_filter)]:
+            sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
+            if sort_direction != "--":
+                ascending = sort_direction == "⬆️"
+                df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
 
     # --- Display Filtered Data ---
     st.header("Filtered Data")
