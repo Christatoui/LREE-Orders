@@ -30,19 +30,15 @@ else:
 tab1, tab2 = st.tabs(["Filtered View", "Data Sheet"])
 
 with tab1:
-    # --- Filtering ---
     df_filtered = st.session_state.df.copy()
-    
-    # --- Sorting ---
-    st.header("Sort Data")
-    sort_col1, sort_col2 = st.columns(2)
-    with sort_col1:
-        sort_column = st.selectbox("Sort by column", options=df_filtered.columns.tolist())
-    with sort_col2:
-        sort_direction = st.selectbox("Direction", options=["⬆️ Ascending", "⬇️ Descending"])
-    
-    ascending = sort_direction == "⬆️ Ascending"
-    df_filtered = df_filtered.sort_values(by=sort_column, ascending=ascending)
+
+    # --- ATC Sorter ---
+    if 'ATC' in df_filtered.columns:
+        st.header("Sort by ATC")
+        sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
+        if sort_direction != "--":
+            ascending = sort_direction == "⬆️"
+            df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
 
     # --- Keyword Filter ---
     st.header("Keyword Filter")
@@ -61,9 +57,9 @@ with tab1:
             r'\d+\s*GB',  # e.g., "8GB", "256 GB"
             r'\d+T',      # e.g., "1T"
             r'\d+G',      # e.g., "8G"
-            'MBP',
-            'MBA',
-            'STUDIO',
+            'MBP', 
+            'MBA', 
+            'STUDIO', 
             'MINI'
         ]
         
@@ -89,6 +85,7 @@ with tab1:
                 # Use re.escape to safely handle special characters in the search term
                 df_filtered = df_filtered[descriptions.str.contains(re.escape(selected_match), case=False, na=False)]
 
+    # --- Column Filters ---
     st.header("Column Filters")
     
     # Create columns for the filters
