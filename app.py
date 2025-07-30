@@ -32,13 +32,6 @@ tab1, tab2 = st.tabs(["Filtered View", "Data Sheet"])
 with tab1:
     df_filtered = st.session_state.df.copy()
 
-    # --- ATC Sorter ---
-    if 'ATC' in df_filtered.columns:
-        st.header("Sort by ATC")
-        sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
-        if sort_direction != "--":
-            ascending = sort_direction == "⬆️"
-            df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
 
     # --- Keyword Filter ---
     st.header("Keyword Filter")
@@ -91,10 +84,13 @@ with tab1:
     # Create columns for the filters
     filter_cols = st.columns(len(df_filtered.columns))
 
-    for i, column in enumerate(df_filtered.columns):
-        # Skip creating a filter for the 'ATC' column as it has a dedicated sorter
-        if column == 'ATC':
-            continue
+    # Create a list of columns to filter, excluding 'ATC' for now
+    columns_to_filter = [col for col in df_filtered.columns if col != 'ATC']
+    
+    # Create columns for the filters
+    filter_cols = st.columns(len(df_filtered.columns))
+
+    for i, column in enumerate(columns_to_filter):
         with filter_cols[i]:
             # For object/string columns, create a multiselect filter
             if df_filtered[column].dtype == 'object':
@@ -116,6 +112,14 @@ with tab1:
                 if min_val < max_val:
                     selected_range = st.slider(f"Filter by {column}", min_val, max_val, (min_val, max_val))
                     df_filtered = df_filtered[(df_filtered[column] >= selected_range[0]) & (df_filtered[column] <= selected_range[1])]
+
+    # Add the ATC sorter as the last filter
+    if 'ATC' in df_filtered.columns:
+        with filter_cols[len(columns_to_filter)]:
+            sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
+            if sort_direction != "--":
+                ascending = sort_direction == "⬆️"
+                df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
 
     # --- Display Filtered Data ---
     st.header("Filtered Data")
