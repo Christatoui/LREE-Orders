@@ -5,6 +5,15 @@ import re
 st.set_page_config(layout="wide")
 st.title("CSV Data Viewer and Filter")
 
+# Inject custom CSS to set the font size
+st.markdown("""
+<style>
+    .stMultiSelect [data-baseweb="select"] > div > div > div {
+        font-size: 12px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- File Uploader ---
 st.sidebar.title("Upload Data")
 uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
