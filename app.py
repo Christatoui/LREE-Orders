@@ -95,7 +95,8 @@ with tab1:
             # For object/string columns, create a multiselect filter
             if df_filtered[column].dtype == 'object':
                 unique_values = df_filtered[column].dropna().unique()
-                filter_mode = st.selectbox(f"By {column}", ["All", "None", "Custom"], key=f"mode_{column}")
+                label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
+                filter_mode = st.selectbox(label, ["All", "None", "Custom"], key=f"mode_{column}")
 
                 if filter_mode == "None":
                     df_filtered = df_filtered[df_filtered[column].isnull()]
