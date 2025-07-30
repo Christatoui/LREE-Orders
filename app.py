@@ -101,7 +101,7 @@ with tab1:
                 if filter_mode == "None":
                     df_filtered = df_filtered[df_filtered[column].isnull()]
                 elif filter_mode == "Custom":
-                    selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
+                    selected_values = st.multiselect("Select Values", list(unique_values), key=f"multiselect_{column}")
                     if selected_values:
                         df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
 
