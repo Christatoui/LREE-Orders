@@ -61,7 +61,10 @@ with tab1:
             # A filter becomes active if the one before it has a selection
             if i > 0:
                 prev_col = filter_order[i-1]
-                if st.session_state.get(f"filter_{prev_col}"):
+                # A filter becomes active if the one before it has any kind of selection
+                if (st.session_state.get(f"filter_{prev_col}") or
+                    st.session_state.get(f"search_{prev_col}") or
+                    st.session_state.get(f"multiselect_{prev_col}")):
                     is_active = True
 
             unique_values = df_filtered[column].dropna().unique()
