@@ -54,17 +54,17 @@ with tab1:
             # Create a temporary dataframe that is filtered by all *other* columns
             temp_df = st.session_state.df.copy()
             for other_col in columns_for_grid:
-                if i != columns_for_grid.index(other_col) and st.session_state.filters.get(other_col, "All") != "All":
+                if i != columns_for_grid.index(other_col) and st.session_state.filters[other_col] != "All":
                     temp_df = temp_df[temp_df[other_col] == st.session_state.filters[other_col]]
             
             unique_values = ["All"] + temp_df[column].dropna().unique().tolist()
             
             if column == 'ATC':
-                st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0, key=f"filter_{column}")
+                st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0, key=f"filters", args=(column,))
                 continue
 
             label = "By Country/Region" if column == "Customer Country/Region" else f"By {column}"
-            st.selectbox(label, unique_values, key=f"filter_{column}")
+            st.selectbox(label, unique_values, key=f"filters", args=(column,))
 
     # Apply all filters from session state
     for column, value in st.session_state.filters.items():
