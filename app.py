@@ -67,11 +67,19 @@ with tab1:
             unique_values = df_filtered[column].dropna().unique()
             
             if is_active:
-                selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
-                if selected_values:
-                    df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
+                if column == "Product Description":
+                    search_term = st.text_input(f"Search {column}", key=f"filter_{column}")
+                    if search_term:
+                        df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
+                else:
+                    selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
+                    if selected_values:
+                        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
             else:
-                st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
+                if column == "Product Description":
+                    st.text_input(f"Search {column}", disabled=True, key=f"filter_{column}")
+                else:
+                    st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
     # --- ATC Sorter (applied after all filters) ---
     if 'ATC' in df_filtered.columns:
