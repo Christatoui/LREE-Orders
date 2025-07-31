@@ -63,9 +63,6 @@ with tab1:
         
     filter_cols = st.columns(len(columns_for_grid))
 
-    # This dataframe is used to generate the options for the custom filters
-    df_for_custom_options = st.session_state.df.copy()
-
     # First pass: Display widgets and collect user input into session state
     for i, column in enumerate(columns_for_grid):
         with filter_cols[i]:
@@ -79,25 +76,20 @@ with tab1:
                 
                 if st.session_state[f"mode_{column}"] == "Custom":
                     # Options for this multiselect are based on the data filtered by *all previous* selections
-                    temp_df_for_options = st.session_state.df.copy()
+                    temp_df = st.session_state.df.copy()
                     for prev_col in columns_for_grid[:i]:
-                        if st.session_state.get(f"mode_{prev_col}") == "None":
-                            temp_df_for_options = temp_df_for_options[temp_df_for_options[prev_col].isnull()]
-                        elif st.session_state.get(f"mode_{prev_col}") == "Custom":
-                            prev_values = st.session_state.get(f"values_{prev_col}", [])
-                            if prev_values:
-                                if prev_col == description_col:
-                                    pattern = '|'.join([re.escape(val) for val in prev_values])
-                                    temp_df_for_options = temp_df_for_options[temp_df_for_options[prev_col].str.contains(pattern, case=False, na=False)]
-                                else:
-                                    temp_df_for_options = temp_df_for_options[temp_df_for_options[prev_col].isin(prev_values)]
+                        if st.session_state[f"mode_{prev_col}"] == "None":
+                            temp_df = temp_df[temp_df[prev_col].isnull()]
+                        elif st.session_state[f"mode_{prev_col}"] == "Custom":
+                            if st.session_state[f"values_{prev_col}"]:
+                                temp_df = temp_df[temp_df[prev_col].isin(st.session_state[f"values_{prev_col}"])]
                     
-                    cascading_unique_values = temp_df_for_options[column].dropna().unique()
+                    cascading_unique_values = temp_df[column].dropna().unique()
                     
                     if column == description_col:
                         keyword_patterns = [r'\d+\s*TB', r'\d+\s*GB', r'\d+T', r'\d+G', 'MBP', 'MBA', 'STUDIO', 'MINI']
                         all_matches = []
-                        descriptions = temp_df_for_options[description_col].astype(str)
+                        descriptions = temp_df[description_col].astype(str)
                         for pattern in keyword_patterns:
                             try:
                                 matches = descriptions.str.findall(pattern, flags=re.IGNORECASE).explode().dropna()
