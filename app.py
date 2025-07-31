@@ -67,17 +67,23 @@ with tab1:
             unique_values = df_filtered[column].dropna().unique()
             
             if is_active:
-                if column == "Product Description":
-                    search_term = st.text_input(f"Search {column}", key=f"filter_{column}")
-                    if search_term:
-                        df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
+                if column in ["Product Description", "Description"]:
+                    filter_mode = st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], key=f"mode_{column}")
+                    if filter_mode == "Search by Text":
+                        search_term = st.text_input(f"Search {column}", key=f"search_{column}")
+                        if search_term:
+                            df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
+                    else:
+                        selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
+                        if selected_values:
+                            df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
                 else:
                     selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
                     if selected_values:
                         df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
             else:
-                if column == "Product Description":
-                    st.text_input(f"Search {column}", disabled=True, key=f"filter_{column}")
+                if column in ["Product Description", "Description"]:
+                    st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
