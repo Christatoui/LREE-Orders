@@ -102,10 +102,14 @@ with tab1:
                     
                     cascading_unique_values = sorted(list(set(all_matches)), key=str.casefold)
                     
-                    selected_values = st.multiselect("Select Keywords", list(cascading_unique_values), key=f"multiselect_{column}")
-                    if selected_values:
-                        # Build a regex pattern to find any of the selected keywords
-                        pattern = '|'.join([re.escape(val) for val in selected_values])
+                    selected_value = st.selectbox(
+                        "Filter by Keyword",
+                        options=["All"] + list(cascading_unique_values),
+                        key=f"keyword_selectbox_{column}"
+                    )
+                    if selected_value != "All":
+                        # Build a regex pattern to find the selected keyword
+                        pattern = re.escape(selected_value)
                         df_to_filter = df_to_filter[df_to_filter[column].str.contains(pattern, case=False, na=False)]
                         # Update the dataframe for the next custom filter in the sequence
                         df_for_custom_options = df_for_custom_options[df_for_custom_options[column].str.contains(pattern, case=False, na=False)]
