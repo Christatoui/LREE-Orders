@@ -3,6 +3,23 @@ import pandas as pd
 import re
 
 st.set_page_config(layout="wide")
+
+# --- Custom CSS for button colors ---
+st.markdown("""
+<style>
+    /* Add button */
+    div[data-testid*="stButton"] > button[kind="primary"] {
+        background-color: #4CAF50; /* Green */
+        color: white;
+    }
+    /* Remove button */
+    div[data-testid*="stButton"] > button:not([kind="primary"]) {
+        background-color: #f44336; /* Red */
+        color: white;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("CSV Data Viewer and Filter")
 
 # --- File Uploader ---
