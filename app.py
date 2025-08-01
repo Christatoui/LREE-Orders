@@ -120,21 +120,22 @@ with tab1:
     for index, row in df_filtered.iterrows():
         cols = st.columns(len(row) + 1)
         
-        # Use a consistent identifier for the row, like a tuple of its values
-        row_tuple = tuple(row)
-        
-        # Check if the item is already in the order
-        is_in_order = any(tuple(item.values()) == row_tuple for item in st.session_state.current_order)
+        row_dict = row.to_dict()
+        is_in_order = any(item['Part'] == row_dict['Part'] for item in st.session_state.current_order)
 
         if is_in_order:
             if cols[0].button("Remove", key=f"remove_{index}"):
-                # Find and remove the item from the list
-                st.session_state.current_order = [item for item in st.session_state.current_order if tuple(item.values()) != row_tuple]
+                st.session_state.current_order = [item for item in st.session_state.current_order if item['Part'] != row_dict['Part']]
                 st.success(f"Removed {row['Product Description']} from current order.")
                 st.rerun()
         else:
             if cols[0].button("Add", key=f"add_{index}", type="primary"):
-                st.session_state.current_order.append(row.to_dict())
+                row_dict['Quantity'] = 1
+                row_dict['Price per unit'] = 0.0
+                row_dict['Hardware DRI'] = ""
+                row_dict['Location'] = "Cork"
+                row_dict['1-line Justification'] = ""
+                st.session_state.current_order.append(row_dict)
                 st.success(f"Added {row['Product Description']} to current order.")
                 st.rerun()
         
@@ -149,7 +150,50 @@ with tab3:
     st.header("Current Order")
     if st.session_state.current_order:
         order_df = pd.DataFrame(st.session_state.current_order)
-        st.dataframe(order_df)
+        
+        order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
+
+        if 'Description' in order_df.columns and 'Part' in order_df.columns:
+            cols = order_df.columns.tolist()
+            cols.insert(0, cols.pop(cols.index('Description')))
+            cols.insert(1, cols.pop(cols.index('Part')))
+            if 'Quantity' in cols:
+                cols.insert(2, cols.pop(cols.index('Quantity')))
+            if 'Price per unit' in cols:
+                cols.insert(3, cols.pop(cols.index('Price per unit')))
+            if 'Total Unit Cost' in cols:
+                cols.insert(4, cols.pop(cols.index('Total Unit Cost')))
+            if 'Hardware DRI' in cols:
+                cols.insert(5, cols.pop(cols.index('Hardware DRI')))
+            if 'Location' in cols:
+                cols.insert(6, cols.pop(cols.index('Location')))
+            if '1-line Justification' in cols:
+                cols.insert(7, cols.pop(cols.index('1-line Justification')))
+            order_df = order_df[cols]
+        
+        # Define the columns to display and hide the rest
+        display_cols = [
+            "Description", "Part", "Quantity", "Price per unit",
+            "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification"
+        ]
+        # Filter out any columns that might not exist in the dataframe yet
+        display_cols = [col for col in display_cols if col in order_df.columns]
+        
+        edited_order_df = st.data_editor(
+            order_df[display_cols],
+            column_config={
+                "Location": st.column_config.SelectboxColumn(
+                    "Location",
+                    help="Select the location for the item",
+                    options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
+                    required=False,
+                )
+            },
+            hide_index=True,
+            key="order_editor"
+        )
+        st.session_state.current_order = edited_order_df.to_dict('records')
+
     else:
         st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
 
