@@ -153,6 +153,17 @@ with tab3:
         
         order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
 
+        # --- Real-time Stock Validation ---
+        stock_errors = []
+        for index, row in order_df.iterrows():
+            if 'ATC' in row and 'Quantity' in row:
+                if row['Quantity'] > row['ATC']:
+                    stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
+        
+        if stock_errors:
+            error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
+            st.warning(error_message, icon="⚠️")
+
         # Define the columns to display and their order
         display_cols = [
             "Description", "Part", "Quantity", "Price per unit", 
