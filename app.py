@@ -12,6 +12,8 @@ uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
 # --- Main App Logic ---
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
+if 'current_order' not in st.session_state:
+    st.session_state.current_order = []
 
 if uploaded_file is not None:
     try:
@@ -29,7 +31,7 @@ if st.session_state.df.empty:
     st.stop()
 
 # Create tabs
-tab1, tab2 = st.tabs(["Filtered View", "Data Sheet"])
+tab1, tab2, tab3, tab4 = st.tabs(["Filtered View", "Data Sheet", "Current Order", "Past Orders"])
 
 with tab1:
     df_filtered = st.session_state.df.copy()
@@ -39,12 +41,12 @@ with tab1:
     # --- Guided, Sequential, Multi-Select Filtering ---
     
     filter_order = [
-        "Product Family Code",
-        "Product Description",
-        "Description",
-        "Subclass Desc",
-        "Subfamily Desc",
-        "Country/Region",
+        "Product Family Code", 
+        "Product Description", 
+        "Description", 
+        "Subclass Desc", 
+        "Subfamily Desc", 
+        "Country/Region", 
         "Part"
     ]
 
@@ -55,13 +57,10 @@ with tab1:
 
     for i, column in enumerate(filter_order):
         with filter_cols[i]:
-            # The first filter is always active
             is_active = i == 0
             
-            # A filter becomes active if the one before it has a selection
             if i > 0:
                 prev_col = filter_order[i-1]
-                # A filter becomes active if the one before it has any kind of selection
                 if (st.session_state.get(f"filter_{prev_col}") or
                     st.session_state.get(f"search_{prev_col}") or
                     st.session_state.get(f"multiselect_{prev_col}")):
@@ -90,11 +89,37 @@ with tab1:
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- Display Filtered Data ---
+    # --- Display Filtered Data with "Add to Order" buttons ---
     st.header("Filtered Data")
-    st.dataframe(df_filtered)
+    
+    # Create a header row
+    cols = st.columns(len(df_filtered.columns) + 1)
+    cols[0].write("**Add to Order**")
+    for i, col_name in enumerate(df_filtered.columns):
+        cols[i+1].write(f"**{col_name}**")
+
+    # Display data rows with buttons
+    for index, row in df_filtered.iterrows():
+        cols = st.columns(len(row) + 1)
+        if cols[0].button("Add", key=f"add_{index}"):
+            st.session_state.current_order.append(row)
+            st.success(f"Added {row['Product Description']} to current order.")
+        
+        for i, value in enumerate(row):
+            cols[i+1].write(value)
 
 with tab2:
-    # --- Display Original Data ---
     st.header("Original Data")
     st.dataframe(st.session_state.df)
+
+with tab3:
+    st.header("Current Order")
+    if st.session_state.current_order:
+        order_df = pd.DataFrame(st.session_state.current_order)
+        st.dataframe(order_df)
+    else:
+        st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
+
+with tab4:
+    st.header("Past Orders")
+    st.info("This feature is not yet implemented.")
