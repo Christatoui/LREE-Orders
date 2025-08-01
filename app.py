@@ -182,11 +182,16 @@ with tab3:
         edited_order_df = st.data_editor(
             order_df[display_cols],
             column_config={
+                "Part": st.column_config.Column(width="medium"),
+                "Quantity": st.column_config.Column(width="small"),
+                "Price per unit": st.column_config.Column(width="small"),
+                "Total Unit Cost": st.column_config.Column(width="small"),
                 "Location": st.column_config.SelectboxColumn(
                     "Location",
-                    help="Select the location for the item",
+                    help="The location of the hardware",
                     options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
                     required=False,
+                    width="medium"
                 )
             },
             hide_index=True,
