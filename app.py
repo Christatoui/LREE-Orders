@@ -81,16 +81,6 @@ with tab1:
                         selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
                         if selected_values:
                             df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
-                else:
-                    selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
-                    if selected_values:
-                        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
-            else:
-                if column in ["Product Description", "Description"]:
-                    st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
-                else:
-                    st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
-
                 elif column == "ATC":
                     sort_direction = st.selectbox("Sort by ATC", options=["--", "⬆️", "⬇️"], key="sort_atc")
                     if sort_direction != "--":
