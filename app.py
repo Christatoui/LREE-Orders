@@ -131,7 +131,7 @@ with tab1:
         else:
             if cols[0].button("Add", key=f"add_{index}", type="primary"):
                 row_dict['Quantity'] = 1
-                row_dict['Price per unit'] = 0.0
+                row_dict['$ per unit'] = 0.0
                 row_dict['Hardware DRI'] = ""
                 row_dict['Location'] = "Cork"
                 row_dict['1-line Justification'] = ""
@@ -151,7 +151,7 @@ with tab3:
     if st.session_state.current_order:
         order_df = pd.DataFrame(st.session_state.current_order)
         
-        order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
+        order_df['Total Cost'] = order_df['Quantity'] * order_df['$ per unit']
 
         if 'Description' in order_df.columns and 'Part' in order_df.columns:
             cols = order_df.columns.tolist()
@@ -159,10 +159,10 @@ with tab3:
             cols.insert(1, cols.pop(cols.index('Part')))
             if 'Quantity' in cols:
                 cols.insert(2, cols.pop(cols.index('Quantity')))
-            if 'Price per unit' in cols:
-                cols.insert(3, cols.pop(cols.index('Price per unit')))
-            if 'Total Unit Cost' in cols:
-                cols.insert(4, cols.pop(cols.index('Total Unit Cost')))
+            if '$ per unit' in cols:
+                cols.insert(3, cols.pop(cols.index('$ per unit')))
+            if 'Total Cost' in cols:
+                cols.insert(4, cols.pop(cols.index('Total Cost')))
             if 'Hardware DRI' in cols:
                 cols.insert(5, cols.pop(cols.index('Hardware DRI')))
             if 'Location' in cols:
@@ -170,28 +170,15 @@ with tab3:
             if '1-line Justification' in cols:
                 cols.insert(7, cols.pop(cols.index('1-line Justification')))
             order_df = order_df[cols]
-        
-        # Define the columns to display and hide the rest
-        display_cols = [
-            "Description", "Part", "Quantity", "Price per unit",
-            "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification"
-        ]
-        # Filter out any columns that might not exist in the dataframe yet
-        display_cols = [col for col in display_cols if col in order_df.columns]
-        
+
         edited_order_df = st.data_editor(
-            order_df[display_cols],
+            order_df,
             column_config={
-                "Part": st.column_config.Column(width="medium"),
-                "Quantity": st.column_config.Column(width="small"),
-                "Price per unit": st.column_config.Column(width="small"),
-                "Total Unit Cost": st.column_config.Column(width="small"),
                 "Location": st.column_config.SelectboxColumn(
                     "Location",
-                    help="The location of the hardware",
+                    help="Select the location for the item",
                     options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
                     required=False,
-                    width="medium"
                 )
             },
             hide_index=True,
