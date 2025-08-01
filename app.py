@@ -110,22 +110,21 @@ with tab1:
     # --- Display Filtered Data with Row Selection ---
     st.header("Filtered Data")
     
-    selection = st.dataframe(df_filtered, on_select="rerun", selection_mode="multi-row")
+    selection = st.dataframe(df_filtered, on_select="rerun", selection_mode="multi-row", key="filtered_data_table")
     
-    if selection:
+    if selection and selection["selection"]["rows"]:
         selected_rows = df_filtered.iloc[selection["selection"]["rows"]]
         if st.button("Add Selected to Order", type="primary"):
             for index, row in selected_rows.iterrows():
                 row_dict = row.to_dict()
-                is_in_order = any(item['Part'] == row_dict['Part'] for item in st.session_state.current_order)
-                if not is_in_order:
-                    row_dict['Quantity'] = 1
-                    row_dict['Price per unit'] = 0.0
-                    row_dict['Hardware DRI'] = ""
-                    row_dict['Location'] = "Cork"
-                    row_dict['1-line Justification'] = ""
-                    st.session_state.current_order.append(row_dict)
+                row_dict['Quantity'] = 1
+                row_dict['Price per unit'] = 0.0
+                row_dict['Hardware DRI'] = ""
+                row_dict['Location'] = "Cork"
+                row_dict['1-line Justification'] = ""
+                st.session_state.current_order.append(row_dict)
             st.success(f"Added {len(selected_rows)} item(s) to current order.")
+            st.session_state.filtered_data_table = {"selection": {"rows": []}} # Reset selection
             st.rerun()
 
 with tab2:
@@ -138,6 +137,23 @@ with tab3:
         order_df = pd.DataFrame(st.session_state.current_order)
         
         order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
+
+        # --- Real-time Stock Validation ---
+        stock_errors = []
+        # Group by Part number and sum the quantities
+        order_summary = order_df.groupby('Part').agg({
+            'Quantity': 'sum',
+            'ATC': 'first', # Assuming ATC is the same for the same part number
+            'Description': 'first'
+        }).reset_index()
+
+        for index, row in order_summary.iterrows():
+            if row['Quantity'] > row['ATC']:
+                stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Total Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
+        
+        if stock_errors:
+            error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
+            st.warning(error_message, icon="⚠️")
 
         # Define the columns to display and their order
         display_cols = [
