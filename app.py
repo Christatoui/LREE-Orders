@@ -166,7 +166,7 @@ with tab3:
 
         # Define the columns to display and their order
         display_cols = [
-            "Description", "Part", "Quantity", "Price per unit", 
+            "Description", "Part", "ATC", "Quantity", "Price per unit", 
             "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification"
         ]
         # Filter out any columns that might not exist in the dataframe yet
