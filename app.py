@@ -11,6 +11,7 @@ st.markdown("""
     div[data-testid*="stButton"] > button[kind="primary"] {
         background-color: #4CAF50; /* Green */
         color: white;
+        border-color: #4CAF50;
     }
     /* Remove button */
     div[data-testid*="stButton"] > button:not([kind="primary"]) {
