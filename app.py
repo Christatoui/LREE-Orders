@@ -45,8 +45,7 @@ with tab1:
         "Subclass Desc",
         "Subfamily Desc",
         "Country/Region",
-        "Part",
-        "ATC"
+        "Part"
     ]
 
     # Filter out columns that are not in the dataframe
@@ -81,11 +80,6 @@ with tab1:
                         selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
                         if selected_values:
                             df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
-                elif column == "ATC":
-                    sort_direction = st.selectbox("Sort by ATC", options=["--", "⬆️", "⬇️"], key="sort_atc")
-                    if sort_direction != "--":
-                        ascending = sort_direction == "⬆️"
-                        df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
                 else:
                     selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
                     if selected_values:
@@ -93,8 +87,6 @@ with tab1:
             else:
                 if column in ["Product Description", "Description"]:
                     st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
-                elif column == "ATC":
-                    st.selectbox("Sort by ATC", options=["--", "⬆️", "⬇️"], disabled=True, key="sort_atc")
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
