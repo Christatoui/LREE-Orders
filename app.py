@@ -107,40 +107,26 @@ with tab1:
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- Display Filtered Data with "Add to Order" buttons ---
+    # --- Display Filtered Data with Row Selection ---
     st.header("Filtered Data")
     
-    # Create a header row
-    cols = st.columns(len(df_filtered.columns) + 1)
-    cols[0].write("**Add to Order**")
-    for i, col_name in enumerate(df_filtered.columns):
-        cols[i+1].write(f"**{col_name}**")
-
-    # Display data rows with buttons
-    for index, row in df_filtered.iterrows():
-        cols = st.columns(len(row) + 1)
-        
-        row_dict = row.to_dict()
-        is_in_order = any(item['Part'] == row_dict['Part'] for item in st.session_state.current_order)
-
-        if is_in_order:
-            if cols[0].button("Remove", key=f"remove_{index}"):
-                st.session_state.current_order = [item for item in st.session_state.current_order if item['Part'] != row_dict['Part']]
-                st.success(f"Removed {row['Product Description']} from current order.")
-                st.rerun()
-        else:
-            if cols[0].button("Add", key=f"add_{index}", type="primary"):
-                row_dict['Quantity'] = 1
-                row_dict['Price per unit'] = 0.0
-                row_dict['Hardware DRI'] = ""
-                row_dict['Location'] = "Cork"
-                row_dict['1-line Justification'] = ""
-                st.session_state.current_order.append(row_dict)
-                st.success(f"Added {row['Product Description']} to current order.")
-                st.rerun()
-        
-        for i, value in enumerate(row):
-            cols[i+1].write(value)
+    selection = st.dataframe(df_filtered, on_select="rerun", selection_mode="multi-row")
+    
+    if selection:
+        selected_rows = df_filtered.iloc[selection["selection"]["rows"]]
+        if st.button("Add Selected to Order", type="primary"):
+            for index, row in selected_rows.iterrows():
+                row_dict = row.to_dict()
+                is_in_order = any(item['Part'] == row_dict['Part'] for item in st.session_state.current_order)
+                if not is_in_order:
+                    row_dict['Quantity'] = 1
+                    row_dict['Price per unit'] = 0.0
+                    row_dict['Hardware DRI'] = ""
+                    row_dict['Location'] = "Cork"
+                    row_dict['1-line Justification'] = ""
+                    st.session_state.current_order.append(row_dict)
+            st.success(f"Added {len(selected_rows)} item(s) to current order.")
+            st.rerun()
 
 with tab2:
     st.header("Original Data")
@@ -152,17 +138,6 @@ with tab3:
         order_df = pd.DataFrame(st.session_state.current_order)
         
         order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
-
-        # --- Real-time Stock Validation ---
-        stock_errors = []
-        for index, row in order_df.iterrows():
-            if 'ATC' in row and 'Quantity' in row:
-                if row['Quantity'] > row['ATC']:
-                    stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
-        
-        if stock_errors:
-            error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
-            st.warning(error_message, icon="⚠️")
 
         # Define the columns to display and their order
         display_cols = [
