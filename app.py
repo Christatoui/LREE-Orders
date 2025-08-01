@@ -101,9 +101,19 @@ with tab1:
     # Display data rows with buttons
     for index, row in df_filtered.iterrows():
         cols = st.columns(len(row) + 1)
-        if cols[0].button("Add", key=f"add_{index}"):
-            st.session_state.current_order.append(row)
-            st.success(f"Added {row['Product Description']} to current order.")
+        
+        # Check if the item is already in the order
+        is_in_order = any(row.equals(pd.Series(item)) for item in st.session_state.current_order)
+
+        if is_in_order:
+            if cols[0].button("Remove", key=f"remove_{index}"):
+                # Find and remove the item from the list
+                st.session_state.current_order = [item for item in st.session_state.current_order if not row.equals(pd.Series(item))]
+                st.success(f"Removed {row['Product Description']} from current order.")
+        else:
+            if cols[0].button("Add", key=f"add_{index}"):
+                st.session_state.current_order.append(row.to_dict())
+                st.success(f"Added {row['Product Description']} to current order.")
         
         for i, value in enumerate(row):
             cols[i+1].write(value)
