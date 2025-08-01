@@ -39,13 +39,14 @@ with tab1:
     # --- Guided, Sequential, Multi-Select Filtering ---
     
     filter_order = [
-        "Product Family Code", 
-        "Product Description", 
-        "Description", 
-        "Subclass Desc", 
-        "Subfamily Desc", 
-        "Country/Region", 
-        "Part"
+        "Product Family Code",
+        "Product Description",
+        "Description",
+        "Subclass Desc",
+        "Subfamily Desc",
+        "Country/Region",
+        "Part",
+        "ATC"
     ]
 
     # Filter out columns that are not in the dataframe
@@ -90,13 +91,22 @@ with tab1:
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- ATC Sorter (applied after all filters) ---
-    if 'ATC' in df_filtered.columns:
-        st.header("Sort by ATC")
-        sort_direction = st.selectbox("ATC", options=["--", "⬆️", "⬇️"], index=0)
-        if sort_direction != "--":
-            ascending = sort_direction == "⬆️"
-            df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
+                elif column == "ATC":
+                    sort_direction = st.selectbox("Sort by ATC", options=["--", "⬆️", "⬇️"], key="sort_atc")
+                    if sort_direction != "--":
+                        ascending = sort_direction == "⬆️"
+                        df_filtered = df_filtered.sort_values(by="ATC", ascending=ascending)
+                else:
+                    selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
+                    if selected_values:
+                        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
+            else:
+                if column in ["Product Description", "Description"]:
+                    st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
+                elif column == "ATC":
+                    st.selectbox("Sort by ATC", options=["--", "⬆️", "⬇️"], disabled=True, key="sort_atc")
+                else:
+                    st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
     # --- Display Filtered Data ---
     st.header("Filtered Data")
