@@ -174,7 +174,8 @@ with tab3:
                     help="Select the location for the item",
                     options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
                     required=False,
-                )
+                ),
+                "1-line Justification": st.column_config.Column(width="large")
             },
             hide_index=True,
             key="order_editor"
