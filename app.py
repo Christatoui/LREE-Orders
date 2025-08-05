@@ -208,7 +208,7 @@ with tab3:
         
         if stock_errors:
             error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
-            st.warning(error_message, icon="⚠️")
+            st.warning(error_message, icon="⚠️", unsafe_allow_html=True)
 
         # Define the columns to display and their order
         display_cols = [
