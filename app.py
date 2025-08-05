@@ -167,6 +167,9 @@ with tab1:
                     row_dict['Hardware DRI'] = ""
                     row_dict['Location'] = "Cork"
                     row_dict['1-line Justification'] = ""
+                    row_dict['Approved'] = False
+                    row_dict['Delivered'] = False
+                    row_dict['Transferred'] = False
                     st.session_state.current_order.append(row_dict)
                 save_current_order()
                 st.success(f"Added {len(rows_to_add)} item(s) to current order.")
