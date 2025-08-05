@@ -293,13 +293,14 @@ with tab4:
                     key=f"past_order_editor_{i}"
                 )
                 
-                # Check if the dataframe has been edited
-                if not past_order_df.equals(edited_past_order_df):
-                    st.session_state.past_orders[i]["order"] = edited_past_order_df.to_dict('records')
-                    save_past_orders()
-                    st.success(f"Order '{order_data['name']}' updated.")
-
-                if st.button("Delete this Order", key=f"delete_{i}"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Update this Order", key=f"update_{i}", type="primary"):
+                        st.session_state.past_orders[i]["order"] = edited_past_order_df.to_dict('records')
+                        save_past_orders()
+                        st.success(f"Order '{order_data['name']}' updated.")
+                with col2:
+                    if st.button("Delete this Order", key=f"delete_{i}"):
                     st.session_state.past_orders.pop(i)
                     save_past_orders()
                     st.rerun()
