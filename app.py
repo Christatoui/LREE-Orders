@@ -215,13 +215,16 @@ with tab3:
                 stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Total Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
                 problematic_parts.append(row['Part'])
         
+        # Add a "Status" column
+        order_df['Status'] = order_df.apply(lambda row: "⚠️ Exceeds Stock" if row['Part'] in problematic_parts else "✅ OK", axis=1)
+        
         if stock_errors:
             error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
             st.markdown(f":warning: {error_message}", unsafe_allow_html=True)
 
         # Define the columns to display and their order
         display_cols = [
-            "Description", "Part", "ATC", "Quantity", "Price per unit",
+            "Status", "Description", "Part", "ATC", "Quantity", "Price per unit",
             "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification",
             "Approved", "Delivered", "Transferred"
         ]
@@ -234,13 +237,8 @@ with tab3:
         # Add a "Remove" column to the order dataframe
         order_df.insert(0, "Remove", False)
 
-        def style_problematic_parts(row):
-            if row.Part in problematic_parts:
-                return ['background-color: red'] * len(row)
-            return [''] * len(row)
-
         edited_order_df = st.data_editor(
-            order_df.style.apply(style_problematic_parts, axis=1),
+            order_df,
             column_config={
                 "Remove": st.column_config.CheckboxColumn(required=True),
                 "Price per unit": st.column_config.NumberColumn("$ per unit"),
