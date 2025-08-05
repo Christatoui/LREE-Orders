@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import os
 
 st.set_page_config(layout="wide")
 
@@ -27,11 +28,24 @@ st.title("CSV Data Viewer and Filter")
 st.sidebar.title("Upload Data")
 uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
 
+# --- Constants ---
+CURRENT_ORDER_FILE = "current_order.csv"
+
+# --- Functions to Save and Load Order ---
+def save_current_order():
+    if st.session_state.current_order:
+        pd.DataFrame(st.session_state.current_order).to_csv(CURRENT_ORDER_FILE, index=False)
+
+def load_current_order():
+    if os.path.exists(CURRENT_ORDER_FILE):
+        return pd.read_csv(CURRENT_ORDER_FILE).to_dict('records')
+    return []
+
 # --- Main App Logic ---
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 if 'current_order' not in st.session_state:
-    st.session_state.current_order = []
+    st.session_state.current_order = load_current_order()
 if 'past_orders' not in st.session_state:
     st.session_state.past_orders = []
 if 'editor_key_version' not in st.session_state:
@@ -142,6 +156,7 @@ with tab1:
                     row_dict['Location'] = "Cork"
                     row_dict['1-line Justification'] = ""
                     st.session_state.current_order.append(row_dict)
+                save_current_order()
                 st.success(f"Added {len(rows_to_add)} item(s) to current order.")
                 # Increment the key version to force a reset of the data_editor
                 st.session_state.editor_key_version += 1
@@ -215,9 +230,11 @@ with tab3:
         if st.button("Remove Selected from Order"):
             rows_to_keep = edited_order_df[~edited_order_df.Remove]
             st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
+            save_current_order()
             st.rerun()
         else:
             st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
+            save_current_order()
 
         st.header("Archive Order")
         archive_name = st.text_input("Enter a name for this order:")
@@ -225,6 +242,8 @@ with tab3:
             if archive_name:
                 st.session_state.past_orders.append({"name": archive_name, "order": st.session_state.current_order})
                 st.session_state.current_order = []
+                if os.path.exists(CURRENT_ORDER_FILE):
+                    os.remove(CURRENT_ORDER_FILE)
                 st.success(f"Order '{archive_name}' archived successfully!")
                 st.rerun()
             else:
