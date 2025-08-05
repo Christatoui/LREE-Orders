@@ -281,7 +281,24 @@ with tab4:
     if st.session_state.past_orders:
         for i, order_data in enumerate(st.session_state.past_orders):
             with st.expander(order_data["name"]):
-                st.dataframe(pd.DataFrame(order_data["order"]))
+                past_order_df = pd.DataFrame(order_data["order"])
+                edited_past_order_df = st.data_editor(
+                    past_order_df,
+                    column_config={
+                        "Approved": st.column_config.CheckboxColumn(required=True),
+                        "Delivered": st.column_config.CheckboxColumn(required=True),
+                        "Transferred": st.column_config.CheckboxColumn(required=True)
+                    },
+                    hide_index=True,
+                    key=f"past_order_editor_{i}"
+                )
+                
+                # Check if the dataframe has been edited
+                if not past_order_df.equals(edited_past_order_df):
+                    st.session_state.past_orders[i]["order"] = edited_past_order_df.to_dict('records')
+                    save_past_orders()
+                    st.success(f"Order '{order_data['name']}' updated.")
+
                 if st.button("Delete this Order", key=f"delete_{i}"):
                     st.session_state.past_orders.pop(i)
                     save_past_orders()
