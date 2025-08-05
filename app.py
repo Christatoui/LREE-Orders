@@ -70,6 +70,14 @@ if uploaded_file is not None:
             df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
         st.session_state.df = df
         st.sidebar.success("File uploaded and processed successfully!")
+
+        # --- Re-validate ATC in Current Order ---
+        if st.session_state.current_order:
+            atc_map = df.set_index('Part')['ATC'].to_dict()
+            for item in st.session_state.current_order:
+                item['ATC'] = atc_map.get(item['Part'], 0) # Default to 0 if part no longer exists
+            save_current_order()
+            st.rerun()
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
         st.stop()
