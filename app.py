@@ -219,11 +219,16 @@ with tab3:
         else:
             st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
 
+        st.header("Archive Order")
+        archive_name = st.text_input("Enter a name for this order:")
         if st.button("Archive this Order", type="primary"):
-            st.session_state.past_orders.append(st.session_state.current_order)
-            st.session_state.current_order = []
-            st.success("Order archived successfully!")
-            st.rerun()
+            if archive_name:
+                st.session_state.past_orders.append({"name": archive_name, "order": st.session_state.current_order})
+                st.session_state.current_order = []
+                st.success(f"Order '{archive_name}' archived successfully!")
+                st.rerun()
+            else:
+                st.warning("Please enter a name for the order before archiving.")
 
     else:
         st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
@@ -231,8 +236,8 @@ with tab3:
 with tab4:
     st.header("Past Orders")
     if st.session_state.past_orders:
-        for i, order in enumerate(st.session_state.past_orders):
-            st.subheader(f"Order {i+1}")
-            st.dataframe(pd.DataFrame(order))
+        for order_data in st.session_state.past_orders:
+            st.subheader(order_data["name"])
+            st.dataframe(pd.DataFrame(order_data["order"]))
     else:
         st.info("You have no past orders.")
