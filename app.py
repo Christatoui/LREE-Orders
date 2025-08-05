@@ -209,9 +209,11 @@ with tab3:
             'Description': 'first'
         }).reset_index()
 
+        problematic_parts = []
         for index, row in order_summary.iterrows():
             if row['Quantity'] > row['ATC']:
                 stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Total Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
+                problematic_parts.append(row['Part'])
         
         if stock_errors:
             error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
@@ -232,8 +234,13 @@ with tab3:
         # Add a "Remove" column to the order dataframe
         order_df.insert(0, "Remove", False)
 
+        def style_problematic_parts(row):
+            if row.Part in problematic_parts:
+                return ['background-color: red'] * len(row)
+            return [''] * len(row)
+
         edited_order_df = st.data_editor(
-            order_df,
+            order_df.style.apply(style_problematic_parts, axis=1),
             column_config={
                 "Remove": st.column_config.CheckboxColumn(required=True),
                 "Price per unit": st.column_config.NumberColumn("$ per unit"),
