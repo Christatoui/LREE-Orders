@@ -209,8 +209,9 @@ with tab3:
 
         # Define the columns to display and their order
         display_cols = [
-            "Description", "Part", "ATC", "Quantity", "Price per unit", 
-            "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification"
+            "Description", "Part", "ATC", "Quantity", "Price per unit",
+            "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification",
+            "Approved", "Delivered", "Transferred"
         ]
         # Filter out any columns that might not exist in the dataframe yet
         display_cols = [col for col in display_cols if col in order_df.columns]
@@ -233,7 +234,10 @@ with tab3:
                     options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
                     required=False,
                 ),
-                "1-line Justification": st.column_config.Column(width="large")
+                "1-line Justification": st.column_config.Column(width="large"),
+                "Approved": st.column_config.CheckboxColumn(required=True),
+                "Delivered": st.column_config.CheckboxColumn(required=True),
+                "Transferred": st.column_config.CheckboxColumn(required=True)
             },
             hide_index=True,
             key="order_editor"
