@@ -32,6 +32,8 @@ if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 if 'current_order' not in st.session_state:
     st.session_state.current_order = []
+if 'past_orders' not in st.session_state:
+    st.session_state.past_orders = []
 if 'editor_key_version' not in st.session_state:
     st.session_state.editor_key_version = 0
 
@@ -217,9 +219,20 @@ with tab3:
         else:
             st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
 
+        if st.button("Archive this Order", type="primary"):
+            st.session_state.past_orders.append(st.session_state.current_order)
+            st.session_state.current_order = []
+            st.success("Order archived successfully!")
+            st.rerun()
+
     else:
         st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
 
 with tab4:
     st.header("Past Orders")
-    st.info("This feature is not yet implemented.")
+    if st.session_state.past_orders:
+        for i, order in enumerate(st.session_state.past_orders):
+            st.subheader(f"Order {i+1}")
+            st.dataframe(pd.DataFrame(order))
+    else:
+        st.info("You have no past orders.")
