@@ -136,7 +136,8 @@ with tab1:
                 row_dict['1-line Justification'] = ""
                 st.session_state.current_order.append(row_dict)
             st.success(f"Added {len(rows_to_add)} item(s) to current order.")
-            # The rerun will automatically clear the selections because the dataframe is regenerated
+            # Clear the selections in the session state
+            st.session_state[f"selection"] = {"rows": []}
             st.rerun()
 
 with tab2:
