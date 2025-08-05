@@ -114,19 +114,24 @@ with tab1:
     
     if selection and selection["selection"]["rows"]:
         selected_rows = df_filtered.iloc[selection["selection"]["rows"]]
-        if st.button("Add Selected to Order", type="primary"):
-            for index, row in selected_rows.iterrows():
-                row_dict = row.to_dict()
-                row_dict['Quantity'] = 1
-                row_dict['Price per unit'] = 0.0
-                row_dict['Hardware DRI'] = ""
-                row_dict['Location'] = "Cork"
-                row_dict['1-line Justification'] = ""
-                st.session_state.current_order.append(row_dict)
-            st.success(f"Added {len(selected_rows)} item(s) to current order.")
-            # Clear the selection in the dataframe widget
-            st.session_state.dataframe_selection = {'rows': []}
-            st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Add Selected to Order", type="primary"):
+                for index, row in selected_rows.iterrows():
+                    row_dict = row.to_dict()
+                    row_dict['Quantity'] = 1
+                    row_dict['Price per unit'] = 0.0
+                    row_dict['Hardware DRI'] = ""
+                    row_dict['Location'] = "Cork"
+                    row_dict['1-line Justification'] = ""
+                    st.session_state.current_order.append(row_dict)
+                st.success(f"Added {len(selected_rows)} item(s) to current order.")
+                # We don't need to do anything to clear the selection,
+                # as the user can simply select the same row again to add it multiple times.
+        with col2:
+            if st.button("Clear Selection"):
+                st.session_state.dataframe_selection = {'rows': []}
+                st.rerun()
 
 with tab2:
     st.header("Original Data")
