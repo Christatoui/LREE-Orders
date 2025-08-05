@@ -301,8 +301,8 @@ with tab4:
                         st.success(f"Order '{order_data['name']}' updated.")
                 with col2:
                     if st.button("Delete this Order", key=f"delete_{i}"):
-                    st.session_state.past_orders.pop(i)
-                    save_past_orders()
-                    st.rerun()
+                        st.session_state.past_orders.pop(i)
+                        save_past_orders()
+                        st.rerun()
     else:
         st.info("You have no past orders.")
