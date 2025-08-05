@@ -107,43 +107,43 @@ with tab1:
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- Display Filtered Data with Row Selection ---
+    # --- Display Filtered Data with Add to Order Buttons ---
     st.header("Filtered Data")
     
-    # Add a "Select" column to the dataframe
-    df_filtered.insert(0, "Select", False)
+    # Add a new column for the "Add to Order" buttons
+    df_filtered['Add to Order'] = [False] * len(df_filtered)
 
-    # Use data_editor to display the dataframe with checkboxes
+    # Use st.data_editor to display the dataframe with buttons
     edited_df = st.data_editor(
         df_filtered,
         hide_index=True,
-        column_config={"Select": st.column_config.CheckboxColumn(required=True)},
-        disabled=df_filtered.columns.drop("Select"),
-        key="data_editor"
+        column_config={
+            "Add to Order": st.column_config.CheckboxColumn(
+                "Add to Order",
+                help="Select to add this item to the current order",
+                default=False,
+            )
+        },
+        disabled=df_filtered.columns.drop("Add to Order")
     )
 
-    selected_rows = edited_df[edited_df.Select]
+    # Get the rows where the "Add to Order" checkbox is checked
+    rows_to_add = edited_df[edited_df['Add to Order']]
 
-    if not selected_rows.empty:
-        if st.button("Add Selected to Order", type="primary"):
-            # Get the selected rows without the "Select" column
-            rows_to_add = selected_rows.drop(columns=["Select"])
-            for index, row in rows_to_add.iterrows():
-                row_dict = row.to_dict()
-                row_dict['Quantity'] = 1
-                row_dict['Price per unit'] = 0.0
-                row_dict['Hardware DRI'] = ""
-                row_dict['Location'] = "Cork"
-                row_dict['1-line Justification'] = ""
-                st.session_state.current_order.append(row_dict)
-            st.success(f"Added {len(rows_to_add)} item(s) to current order.")
-            # The data_editor's state is not directly mutable.
-            # By changing the key, we force Streamlit to re-render it from scratch,
-            # which will use the fresh df_filtered with "Select" as False.
-            if 'editor_key_version' not in st.session_state:
-                st.session_state.editor_key_version = 0
-            st.session_state.editor_key_version += 1
-            st.rerun()
+    if not rows_to_add.empty:
+        # Get the selected rows without the "Add to Order" column
+        rows_to_add = rows_to_add.drop(columns=["Add to Order"])
+        for index, row in rows_to_add.iterrows():
+            row_dict = row.to_dict()
+            row_dict['Quantity'] = 1
+            row_dict['Price per unit'] = 0.0
+            row_dict['Hardware DRI'] = ""
+            row_dict['Location'] = "Cork"
+            row_dict['1-line Justification'] = ""
+            st.session_state.current_order.append(row_dict)
+        st.success(f"Added {len(rows_to_add)} item(s) to current order.")
+        st.rerun()
+
 
 with tab2:
     st.header("Original Data")
