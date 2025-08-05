@@ -124,8 +124,9 @@ with tab1:
                 row_dict['1-line Justification'] = ""
                 st.session_state.current_order.append(row_dict)
             st.success(f"Added {len(selected_rows)} item(s) to current order.")
-            # We don't need to do anything to clear the selection,
-            # as the user can simply select the same row again to add it multiple times.
+            # Clear the selection in the dataframe widget
+            st.session_state.dataframe_selection = {'rows': []}
+            st.rerun()
 
 with tab2:
     st.header("Original Data")
