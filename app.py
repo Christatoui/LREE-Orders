@@ -237,7 +237,7 @@ with tab4:
     st.header("Past Orders")
     if st.session_state.past_orders:
         for order_data in st.session_state.past_orders:
-            st.subheader(order_data["name"])
-            st.dataframe(pd.DataFrame(order_data["order"]))
+            with st.expander(order_data["name"]):
+                st.dataframe(pd.DataFrame(order_data["order"]))
     else:
         st.info("You have no past orders.")
