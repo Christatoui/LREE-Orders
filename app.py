@@ -189,9 +189,13 @@ with tab3:
         # Reorder and filter the DataFrame
         order_df = order_df[display_cols]
 
+        # Add a "Remove" column to the order dataframe
+        order_df.insert(0, "Remove", False)
+
         edited_order_df = st.data_editor(
             order_df,
             column_config={
+                "Remove": st.column_config.CheckboxColumn(required=True),
                 "Price per unit": st.column_config.NumberColumn("$ per unit"),
                 "Total Unit Cost": st.column_config.NumberColumn("Total Cost"),
                 "Location": st.column_config.SelectboxColumn(
@@ -205,7 +209,13 @@ with tab3:
             hide_index=True,
             key="order_editor"
         )
-        st.session_state.current_order = edited_order_df.to_dict('records')
+
+        if st.button("Remove Selected from Order"):
+            rows_to_keep = edited_order_df[~edited_order_df.Remove]
+            st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
+            st.rerun()
+        else:
+            st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
 
     else:
         st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
