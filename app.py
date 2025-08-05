@@ -77,7 +77,6 @@ if uploaded_file is not None:
             for item in st.session_state.current_order:
                 item['ATC'] = atc_map.get(item['Part'], 0) # Default to 0 if part no longer exists
             save_current_order()
-            st.rerun()
     except Exception as e:
         st.error(f"Error reading the CSV file: {e}")
         st.stop()
