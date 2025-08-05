@@ -110,12 +110,24 @@ with tab1:
     # --- Display Filtered Data with Row Selection ---
     st.header("Filtered Data")
     
-    selection = st.dataframe(df_filtered, on_select="rerun", selection_mode="multi-row")
-    
-    if selection and selection["selection"]["rows"]:
-        selected_rows = df_filtered.iloc[selection["selection"]["rows"]]
+    # Add a "Select" column to the dataframe
+    df_filtered.insert(0, "Select", False)
+
+    # Use data_editor to display the dataframe with checkboxes
+    edited_df = st.data_editor(
+        df_filtered,
+        hide_index=True,
+        column_config={"Select": st.column_config.CheckboxColumn(required=True)},
+        disabled=df_filtered.columns.drop("Select")
+    )
+
+    selected_rows = edited_df[edited_df.Select]
+
+    if not selected_rows.empty:
         if st.button("Add Selected to Order", type="primary"):
-            for index, row in selected_rows.iterrows():
+            # Get the selected rows without the "Select" column
+            rows_to_add = selected_rows.drop(columns=["Select"])
+            for index, row in rows_to_add.iterrows():
                 row_dict = row.to_dict()
                 row_dict['Quantity'] = 1
                 row_dict['Price per unit'] = 0.0
@@ -123,7 +135,8 @@ with tab1:
                 row_dict['Location'] = "Cork"
                 row_dict['1-line Justification'] = ""
                 st.session_state.current_order.append(row_dict)
-            st.success(f"Added {len(selected_rows)} item(s) to current order.")
+            st.success(f"Added {len(rows_to_add)} item(s) to current order.")
+            # The rerun will automatically clear the selections because the dataframe is regenerated
             st.rerun()
 
 with tab2:
