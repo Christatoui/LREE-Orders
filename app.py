@@ -268,8 +268,12 @@ with tab3:
 with tab4:
     st.header("Past Orders")
     if st.session_state.past_orders:
-        for order_data in st.session_state.past_orders:
+        for i, order_data in enumerate(st.session_state.past_orders):
             with st.expander(order_data["name"]):
                 st.dataframe(pd.DataFrame(order_data["order"]))
+                if st.button("Delete this Order", key=f"delete_{i}"):
+                    st.session_state.past_orders.pop(i)
+                    save_past_orders()
+                    st.rerun()
     else:
         st.info("You have no past orders.")
