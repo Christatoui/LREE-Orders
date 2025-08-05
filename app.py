@@ -246,14 +246,18 @@ with tab3:
             key="order_editor"
         )
 
-        if st.button("Remove Selected from Order"):
-            rows_to_keep = edited_order_df[~edited_order_df.Remove]
-            st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
-            save_current_order()
-            st.rerun()
-        else:
-            st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
-            save_current_order()
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("Remove Selected from Order"):
+                rows_to_keep = edited_order_df[~edited_order_df.Remove]
+                st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
+                save_current_order()
+                st.rerun()
+        with col2:
+            if st.button("Update Order", type="primary"):
+                st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
+                save_current_order()
+                st.success("Order updated!")
 
         st.header("Archive Order")
         archive_name = st.text_input("Enter a name for this order:")
