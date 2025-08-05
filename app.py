@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 import os
+import json
 
 st.set_page_config(layout="wide")
 
@@ -30,6 +31,7 @@ uploaded_file = st.sidebar.file_uploader("Upload your CSV file", type="csv")
 
 # --- Constants ---
 CURRENT_ORDER_FILE = "current_order.csv"
+PAST_ORDERS_FILE = "past_orders.json"
 
 # --- Functions to Save and Load Order ---
 def save_current_order():
@@ -41,13 +43,23 @@ def load_current_order():
         return pd.read_csv(CURRENT_ORDER_FILE).to_dict('records')
     return []
 
+def save_past_orders():
+    with open(PAST_ORDERS_FILE, 'w') as f:
+        json.dump(st.session_state.past_orders, f)
+
+def load_past_orders():
+    if os.path.exists(PAST_ORDERS_FILE):
+        with open(PAST_ORDERS_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
 # --- Main App Logic ---
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
 if 'current_order' not in st.session_state:
     st.session_state.current_order = load_current_order()
 if 'past_orders' not in st.session_state:
-    st.session_state.past_orders = []
+    st.session_state.past_orders = load_past_orders()
 if 'editor_key_version' not in st.session_state:
     st.session_state.editor_key_version = 0
 
@@ -241,6 +253,7 @@ with tab3:
         if st.button("Archive this Order", type="primary"):
             if archive_name:
                 st.session_state.past_orders.append({"name": archive_name, "order": st.session_state.current_order})
+                save_past_orders()
                 st.session_state.current_order = []
                 if os.path.exists(CURRENT_ORDER_FILE):
                     os.remove(CURRENT_ORDER_FILE)
