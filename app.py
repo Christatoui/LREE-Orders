@@ -107,31 +107,25 @@ with tab1:
                 else:
                     st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- Display Filtered Data with Add to Order Buttons ---
+    # --- Display Filtered Data with Row Selection ---
     st.header("Filtered Data")
     
-    # Create header row
-    header_cols = st.columns(len(df_filtered.columns) + 1)
-    for i, col_name in enumerate(df_filtered.columns):
-        header_cols[i].write(f"**{col_name}**")
-    header_cols[-1].write("**Add to Order**")
-
-    # Create rows with buttons
-    for index, row in df_filtered.iterrows():
-        row_cols = st.columns(len(df_filtered.columns) + 1)
-        for i, col_name in enumerate(df_filtered.columns):
-            row_cols[i].write(row[col_name])
-        
-        if row_cols[-1].button("Add", key=f"add_{index}", type="primary"):
-            row_dict = row.to_dict()
-            row_dict['Quantity'] = 1
-            row_dict['Price per unit'] = 0.0
-            row_dict['Hardware DRI'] = ""
-            row_dict['Location'] = "Cork"
-            row_dict['1-line Justification'] = ""
-            st.session_state.current_order.append(row_dict)
-            st.success(f"Added '{row.get('Description', 'Item')}' to current order.")
-            # No rerun needed, order updates in the background
+    selection = st.dataframe(df_filtered, on_select="rerun", selection_mode="multi-row")
+    
+    if selection and selection["selection"]["rows"]:
+        selected_rows = df_filtered.iloc[selection["selection"]["rows"]]
+        if st.button("Add Selected to Order", type="primary"):
+            for index, row in selected_rows.iterrows():
+                row_dict = row.to_dict()
+                row_dict['Quantity'] = 1
+                row_dict['Price per unit'] = 0.0
+                row_dict['Hardware DRI'] = ""
+                row_dict['Location'] = "Cork"
+                row_dict['1-line Justification'] = ""
+                st.session_state.current_order.append(row_dict)
+            st.success(f"Added {len(selected_rows)} item(s) to current order.")
+            # We don't need to do anything to clear the selection,
+            # as the user can simply select the same row again to add it multiple times.
 
 with tab2:
     st.header("Original Data")
