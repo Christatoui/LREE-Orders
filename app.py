@@ -110,30 +110,19 @@ with tab1:
     # --- Display Filtered Data with Add to Order Buttons ---
     st.header("Filtered Data")
     
-    # Add a new column for the "Add to Order" buttons
-    df_filtered['Add to Order'] = [False] * len(df_filtered)
+    # Create header row
+    header_cols = st.columns(len(df_filtered.columns) + 1)
+    for i, col_name in enumerate(df_filtered.columns):
+        header_cols[i].write(f"**{col_name}**")
+    header_cols[-1].write("**Add to Order**")
 
-    # Use st.data_editor to display the dataframe with buttons
-    edited_df = st.data_editor(
-        df_filtered,
-        hide_index=True,
-        column_config={
-            "Add to Order": st.column_config.CheckboxColumn(
-                "Add to Order",
-                help="Select to add this item to the current order",
-                default=False,
-            )
-        },
-        disabled=df_filtered.columns.drop("Add to Order")
-    )
-
-    # Get the rows where the "Add to Order" checkbox is checked
-    rows_to_add = edited_df[edited_df['Add to Order']]
-
-    if not rows_to_add.empty:
-        # Get the selected rows without the "Add to Order" column
-        rows_to_add = rows_to_add.drop(columns=["Add to Order"])
-        for index, row in rows_to_add.iterrows():
+    # Create rows with buttons
+    for index, row in df_filtered.iterrows():
+        row_cols = st.columns(len(df_filtered.columns) + 1)
+        for i, col_name in enumerate(df_filtered.columns):
+            row_cols[i].write(row[col_name])
+        
+        if row_cols[-1].button("Add", key=f"add_{index}", type="primary"):
             row_dict = row.to_dict()
             row_dict['Quantity'] = 1
             row_dict['Price per unit'] = 0.0
@@ -141,9 +130,8 @@ with tab1:
             row_dict['Location'] = "Cork"
             row_dict['1-line Justification'] = ""
             st.session_state.current_order.append(row_dict)
-        st.success(f"Added {len(rows_to_add)} item(s) to current order.")
-        st.rerun()
-
+            st.success(f"Added '{row.get('Description', 'Item')}' to current order.")
+            # No rerun needed, order updates in the background
 
 with tab2:
     st.header("Original Data")
