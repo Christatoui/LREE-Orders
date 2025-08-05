@@ -118,7 +118,8 @@ with tab1:
         df_filtered,
         hide_index=True,
         column_config={"Select": st.column_config.CheckboxColumn(required=True)},
-        disabled=df_filtered.columns.drop("Select")
+        disabled=df_filtered.columns.drop("Select"),
+        key="data_editor"
     )
 
     selected_rows = edited_df[edited_df.Select]
@@ -136,8 +137,12 @@ with tab1:
                 row_dict['1-line Justification'] = ""
                 st.session_state.current_order.append(row_dict)
             st.success(f"Added {len(rows_to_add)} item(s) to current order.")
-            # Clear the selections in the session state
-            st.session_state[f"selection"] = {"rows": []}
+            # The data_editor's state is not directly mutable.
+            # By changing the key, we force Streamlit to re-render it from scratch,
+            # which will use the fresh df_filtered with "Select" as False.
+            if 'editor_key_version' not in st.session_state:
+                st.session_state.editor_key_version = 0
+            st.session_state.editor_key_version += 1
             st.rerun()
 
 with tab2:
