@@ -41,7 +41,7 @@ def save_current_order():
 def load_current_order():
     if os.path.exists(CURRENT_ORDER_FILE):
         df = pd.read_csv(CURRENT_ORDER_FILE)
-        for col in ["Approved", "Delivered", "Transferred"]:
+        for col in ["Approved", "Delivered", "Transferred", "Remove"]:
             if col not in df.columns:
                 df[col] = False
             df[col] = df[col].astype(bool)
