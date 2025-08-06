@@ -57,10 +57,11 @@ def load_past_orders():
         with open(PAST_ORDERS_FILE, 'r') as f:
             past_orders = json.load(f)
             for order in past_orders:
-                for item in order['order']:
-                    for col in ["Approved", "Delivered", "Transferred"]:
-                        if col in item:
-                            item[col] = bool(item[col])
+                if 'order' in order:
+                    for item in order['order']:
+                        for col in ["Approved", "Delivered", "Transferred"]:
+                            if col in item:
+                                item[col] = bool(item[col])
             return past_orders
     return []
 
