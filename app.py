@@ -207,8 +207,9 @@ with tab3:
         with st.expander(f"Total Price: ${total_price:,.2f}"):
             location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
             st.dataframe(
-                location_summary.style.format({"Total Unit Cost": "${:,.2f}"}).set_properties(**{'text-align': 'left'}),
-                hide_index=True
+                location_summary.style.format({"Total Unit Cost": "${:,.2f}"}),
+                hide_index=True,
+                use_container_width=True
             )
 
     st.header("Current Order")
