@@ -249,7 +249,8 @@ with tab3:
                     options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
                     required=False,
                 ),
-                "1-line Justification": st.column_config.Column(width="large"),
+                "1-line Justification": st.column_config.TextColumn(width="large"),
+                "Hardware DRI": st.column_config.TextColumn(),
                 "Approved": st.column_config.CheckboxColumn(required=True),
                 "Delivered": st.column_config.CheckboxColumn(required=True),
                 "Transferred": st.column_config.CheckboxColumn(required=True)
@@ -270,6 +271,12 @@ with tab3:
                 st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
                 save_current_order()
                 st.success("Order updated!")
+
+        st.header("Order Summary")
+        total_price = order_df['Total Unit Cost'].sum()
+        with st.expander(f"Total Price: ${total_price:,.2f}"):
+            location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
+            st.dataframe(location_summary, hide_index=True)
 
         st.header("Archive Order")
         archive_name = st.text_input("Enter a name for this order:")
