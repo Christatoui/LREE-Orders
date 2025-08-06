@@ -42,8 +42,9 @@ def load_current_order():
     if os.path.exists(CURRENT_ORDER_FILE):
         df = pd.read_csv(CURRENT_ORDER_FILE)
         for col in ["Approved", "Delivered", "Transferred"]:
-            if col in df.columns:
-                df[col] = df[col].astype(bool)
+            if col not in df.columns:
+                df[col] = False
+            df[col] = df[col].astype(bool)
         return df.to_dict('records')
     return []
 
@@ -264,9 +265,9 @@ with tab3:
                 ),
                 "1-line Justification": st.column_config.TextColumn(width="large"),
                 "Hardware DRI": st.column_config.TextColumn(),
-                "Approved": st.column_config.CheckboxColumn(required=True),
-                "Delivered": st.column_config.CheckboxColumn(required=True),
-                "Transferred": st.column_config.CheckboxColumn(required=True)
+                "Approved": st.column_config.CheckboxColumn("Approved", default=False),
+                "Delivered": st.column_config.CheckboxColumn("Delivered", default=False),
+                "Transferred": st.column_config.CheckboxColumn("Transferred", default=False)
             },
             hide_index=True,
             key="order_editor"
