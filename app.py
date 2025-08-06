@@ -194,6 +194,15 @@ with tab2:
     st.dataframe(st.session_state.df)
 
 with tab3:
+    st.header("Price Summary")
+    if st.session_state.current_order:
+        order_df = pd.DataFrame(st.session_state.current_order)
+        order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
+        total_price = order_df['Total Unit Cost'].sum()
+        with st.expander(f"Total Price: ${total_price:,.2f}"):
+            location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
+            st.dataframe(location_summary, hide_index=True)
+
     st.header("Current Order")
     if st.session_state.current_order:
         order_df = pd.DataFrame(st.session_state.current_order)
@@ -271,12 +280,6 @@ with tab3:
                 st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
                 save_current_order()
                 st.success("Order updated!")
-
-        st.header("Order Summary")
-        total_price = order_df['Total Unit Cost'].sum()
-        with st.expander(f"Total Price: ${total_price:,.2f}"):
-            location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
-            st.dataframe(location_summary, hide_index=True)
 
         st.header("Archive Order")
         archive_name = st.text_input("Enter a name for this order:")
