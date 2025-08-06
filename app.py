@@ -206,7 +206,10 @@ with tab3:
         total_price = order_df['Total Unit Cost'].sum()
         with st.expander(f"Total Price: ${total_price:,.2f}"):
             location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
-            st.dataframe(location_summary, hide_index=True)
+            st.dataframe(
+                location_summary.style.format({"Total Unit Cost": "${:,.2f}"}).set_properties(**{'text-align': 'left'}),
+                hide_index=True
+            )
 
     st.header("Current Order")
     if st.session_state.current_order:
@@ -255,8 +258,14 @@ with tab3:
             order_df,
             column_config={
                 "Remove": st.column_config.CheckboxColumn(required=True),
-                "Price per unit": st.column_config.NumberColumn("$ per unit"),
-                "Total Unit Cost": st.column_config.NumberColumn("Total Cost"),
+                "Price per unit": st.column_config.NumberColumn(
+                    "$ per unit",
+                    format="$%d",
+                ),
+                "Total Unit Cost": st.column_config.NumberColumn(
+                    "Total Cost",
+                    format="$%d",
+                ),
                 "Location": st.column_config.SelectboxColumn(
                     "Location",
                     help="Select the location for the item",
