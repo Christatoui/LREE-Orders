@@ -55,7 +55,13 @@ def save_past_orders():
 def load_past_orders():
     if os.path.exists(PAST_ORDERS_FILE):
         with open(PAST_ORDERS_FILE, 'r') as f:
-            return json.load(f)
+            past_orders = json.load(f)
+            for order in past_orders:
+                for item in order['order']:
+                    for col in ["Approved", "Delivered", "Transferred"]:
+                        if col in item:
+                            item[col] = bool(item[col])
+            return past_orders
     return []
 
 # --- Main App Logic ---
