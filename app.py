@@ -3,6 +3,7 @@ import pandas as pd
 import re
 import os
 import json
+import traceback
 
 st.set_page_config(layout="wide")
 
@@ -41,10 +42,18 @@ def save_current_order():
 def load_current_order():
     if os.path.exists(CURRENT_ORDER_FILE):
         df = pd.read_csv(CURRENT_ORDER_FILE)
+        # Robustly handle boolean columns
         for col in ["Approved", "Delivered", "Transferred", "Remove"]:
             if col not in df.columns:
                 df[col] = False
-            df[col] = df[col].astype(bool)
+            # Fill NaNs before converting to bool to prevent errors
+            df[col] = df[col].fillna(False).astype(bool)
+        
+        # Robustly handle numeric columns
+        for col in ["Quantity", "Price per unit", "ATC"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
         return df.to_dict('records')
     return []
 
@@ -212,8 +221,15 @@ with tab3:
     st.header("Price Summary")
     if st.session_state.current_order:
         order_df = pd.DataFrame(st.session_state.current_order)
+        
+        # Ensure required columns for calculations exist to prevent errors
+        for col, default in [('Quantity', 1), ('Price per unit', 0.0), ('Location', 'N/A')]:
+            if col not in order_df.columns:
+                order_df[col] = default
+
         order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
         total_price = order_df['Total Unit Cost'].sum()
+        
         with st.expander(f"Total Price: ${total_price:,.2f}"):
             location_summary = order_df.groupby('Location')['Total Unit Cost'].sum().reset_index()
             st.dataframe(
@@ -222,103 +238,114 @@ with tab3:
                 use_container_width=True
             )
 
-    st.header("Current Order")
-    if st.session_state.current_order:
-        order_df = pd.DataFrame(st.session_state.current_order)
-        
-        order_df['Total Unit Cost'] = order_df['Quantity'] * order_df['Price per unit']
+        st.header("Current Order")
+        try:
+            # --- Real-time Stock Validation (only if main df is loaded and required columns exist) ---
+            if not st.session_state.df.empty and 'ATC' in order_df.columns and 'Part' in order_df.columns:
+                
+                # Dynamically build the aggregation dictionary based on available columns
+                agg_dict = {}
+                if 'Quantity' in order_df.columns:
+                    agg_dict['Quantity'] = 'sum'
+                if 'ATC' in order_df.columns:
+                    agg_dict['ATC'] = 'first'
+                if 'Description' in order_df.columns:
+                    agg_dict['Description'] = 'first'
 
-        # --- Real-time Stock Validation ---
-        stock_errors = []
-        # Group by Part number and sum the quantities
-        order_summary = order_df.groupby('Part').agg({
-            'Quantity': 'sum',
-            'ATC': 'first', # Assuming ATC is the same for the same part number
-            'Description': 'first'
-        }).reset_index()
+                # Only proceed if we have the necessary columns to check stock
+                if 'Quantity' in agg_dict and 'ATC' in agg_dict:
+                    order_summary = order_df.groupby('Part').agg(agg_dict).reset_index()
 
-        problematic_parts = []
-        for index, row in order_summary.iterrows():
-            if row['Quantity'] > row['ATC']:
-                stock_errors.append(f"<li>{row['Description']} (Part: {row['Part']}): Total Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>")
-                problematic_parts.append(row['Part'])
-        
-        # Add a "Status" column
-        order_df['Status'] = order_df.apply(lambda row: "⚠️ Exceeds Stock" if row['Part'] in problematic_parts else "✅ OK", axis=1)
-        
-        if stock_errors:
-            error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
-            st.markdown(f":warning: {error_message}", unsafe_allow_html=True)
+                    problematic_parts = [
+                        row['Part'] for index, row in order_summary.iterrows()
+                        if row['Quantity'] > row['ATC']
+                    ]
+                    
+                    order_df['Status'] = order_df['Part'].apply(lambda x: "⚠️ Exceeds Stock" if x in problematic_parts else "✅ OK")
+                    
+                    if problematic_parts and 'Description' in order_summary.columns:
+                        stock_errors = [
+                            f"<li>{row.get('Description', 'N/A')} (Part: {row['Part']}): Total Quantity ({row['Quantity']}) exceeds stock ({row['ATC']})</li>"
+                            for index, row in order_summary.iterrows() if row['Part'] in problematic_parts
+                        ]
+                        error_message = "<b>Stock Errors:</b><ul>" + "".join(stock_errors) + "</ul>"
+                        st.markdown(f":warning: {error_message}", unsafe_allow_html=True)
 
-        # Define the columns to display and their order
-        display_cols = [
-            "Status", "Description", "Part", "ATC", "Quantity", "Price per unit",
-            "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification",
-            "Approved", "Delivered", "Transferred"
-        ]
-        # Filter out any columns that might not exist in the dataframe yet
-        display_cols = [col for col in display_cols if col in order_df.columns]
-        
-        # Reorder and filter the DataFrame
-        order_df = order_df[display_cols]
+            # --- Define Display and Configuration ---
+            display_cols = [
+                "Status", "Description", "Part", "ATC", "Quantity", "Price per unit",
+                "Total Unit Cost", "Hardware DRI", "Location", "1-line Justification",
+                "Approved", "Delivered", "Transferred"
+            ]
+            
+            # Filter display columns to only those that actually exist in the DataFrame
+            final_display_cols = [col for col in display_cols if col in order_df.columns]
+            order_df = order_df[final_display_cols]
 
-        # Add a "Remove" column to the order dataframe
-        order_df.insert(0, "Remove", False)
+            # Add a "Remove" column for editing
+            order_df.insert(0, "Remove", False)
 
-        edited_order_df = st.data_editor(
-            order_df,
-            column_config={
+            # --- Dynamic Column Configuration ---
+            existing_locations = []
+            if 'Location' in order_df.columns:
+                existing_locations = order_df['Location'].dropna().unique().tolist()
+            standard_locations = ["Cork", "Hyderabad", "Hong Kong", "Tokyo", "N/A"]
+            all_location_options = sorted(list(set(existing_locations + standard_locations)))
+
+            full_column_config = {
                 "Remove": st.column_config.CheckboxColumn(required=True),
-                "Price per unit": st.column_config.NumberColumn(
-                    "$ per unit",
-                    format="$%d",
-                ),
-                "Total Unit Cost": st.column_config.NumberColumn(
-                    "Total Cost",
-                    format="$%d",
-                ),
+                "Price per unit": st.column_config.NumberColumn("$ per unit", format="$%.2f"),
+                "Total Unit Cost": st.column_config.NumberColumn("Total Cost", format="$%.2f"),
                 "Location": st.column_config.SelectboxColumn(
-                    "Location",
-                    help="Select the location for the item",
-                    options=["Cork", "Hyderabad", "Hong Kong", "Tokyo"],
-                    required=False,
+                    "Location", help="Select the location for the item",
+                    options=all_location_options, required=False,
                 ),
                 "1-line Justification": st.column_config.TextColumn(width="large"),
                 "Hardware DRI": st.column_config.TextColumn(),
                 "Approved": st.column_config.CheckboxColumn("Approved", default=False),
                 "Delivered": st.column_config.CheckboxColumn("Delivered", default=False),
                 "Transferred": st.column_config.CheckboxColumn("Transferred", default=False)
-            },
-            hide_index=True,
-            key="order_editor"
-        )
+            }
+            
+            active_column_config = {
+                k: v for k, v in full_column_config.items() if k in order_df.columns or k == "Remove"
+            }
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("Remove Selected from Order"):
-                rows_to_keep = edited_order_df[~edited_order_df.Remove]
-                st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
-                save_current_order()
-                st.rerun()
-        with col2:
-            if st.button("Update Order", type="primary"):
-                st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
-                save_current_order()
-                st.success("Order updated!")
+            edited_order_df = st.data_editor(
+                order_df, column_config=active_column_config,
+                hide_index=True, key="order_editor"
+            )
 
-        st.header("Archive Order")
-        archive_name = st.text_input("Enter a name for this order:")
-        if st.button("Archive this Order", type="primary"):
-            if archive_name:
-                st.session_state.past_orders.append({"name": archive_name, "order": st.session_state.current_order})
-                save_past_orders()
-                st.session_state.current_order = []
-                if os.path.exists(CURRENT_ORDER_FILE):
-                    os.remove(CURRENT_ORDER_FILE)
-                st.success(f"Order '{archive_name}' archived successfully!")
-                st.rerun()
-            else:
-                st.warning("Please enter a name for the order before archiving.")
+            # --- Action Buttons ---
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("Remove Selected from Order"):
+                    rows_to_keep = edited_order_df[~edited_order_df.Remove]
+                    st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
+                    save_current_order()
+                    st.rerun()
+            with col2:
+                if st.button("Update Order", type="primary"):
+                    st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
+                    save_current_order()
+                    st.success("Order updated!")
+
+            st.header("Archive Order")
+            archive_name = st.text_input("Enter a name for this order:")
+            if st.button("Archive this Order", type="primary"):
+                if archive_name:
+                    st.session_state.past_orders.append({"name": archive_name, "order": st.session_state.current_order})
+                    save_past_orders()
+                    st.session_state.current_order = []
+                    if os.path.exists(CURRENT_ORDER_FILE):
+                        os.remove(CURRENT_ORDER_FILE)
+                    st.success(f"Order '{archive_name}' archived successfully!")
+                    st.rerun()
+                else:
+                    st.warning("Please enter a name for the order before archiving.")
+        except Exception as e:
+            st.error(f"An error occurred while displaying the current order: {e}")
+            st.code(f"Traceback: {traceback.format_exc()}")
 
     else:
         st.info("Your current order is empty. Add items from the 'Filtered View' tab.")
