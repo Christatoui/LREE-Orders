@@ -93,117 +93,120 @@ if uploaded_file is not None:
         st.error(f"Error reading the CSV file: {e}")
         st.stop()
 
-if st.session_state.df.empty:
-    st.info("Please upload a CSV file using the sidebar to get started.")
-    st.stop()
 
 # Create tabs
 tab1, tab2, tab3, tab4 = st.tabs(["Filtered View", "Data Sheet", "Current Order", "Past Orders"])
 
 with tab1:
-    df_filtered = st.session_state.df.copy()
+    if st.session_state.df.empty:
+        st.info("Please upload a CSV file using the sidebar to get started.")
+    else:
+        df_filtered = st.session_state.df.copy()
 
-    st.header("Column Filters")
+        st.header("Column Filters")
 
-    # --- Guided, Sequential, Multi-Select Filtering ---
-    
-    filter_order = [
-        "Product Family Code", 
-        "Product Description", 
-        "Description", 
-        "Subclass Desc", 
-        "Subfamily Desc", 
-        "Country/Region", 
-        "Part"
-    ]
+        # --- Guided, Sequential, Multi-Select Filtering ---
+        
+        filter_order = [
+            "Product Family Code",
+            "Product Description",
+            "Description",
+            "Subclass Desc",
+            "Subfamily Desc",
+            "Country/Region",
+            "Part"
+        ]
 
-    # Filter out columns that are not in the dataframe
-    filter_order = [col for col in filter_order if col in df_filtered.columns]
-    
-    filter_cols = st.columns(len(filter_order))
+        # Filter out columns that are not in the dataframe
+        filter_order = [col for col in filter_order if col in df_filtered.columns]
+        
+        filter_cols = st.columns(len(filter_order))
 
-    for i, column in enumerate(filter_order):
-        with filter_cols[i]:
-            is_active = i == 0
-            
-            if i > 0:
-                prev_col = filter_order[i-1]
-                if (st.session_state.get(f"filter_{prev_col}") or
-                    st.session_state.get(f"search_{prev_col}") or
-                    st.session_state.get(f"multiselect_{prev_col}")):
-                    is_active = True
+        for i, column in enumerate(filter_order):
+            with filter_cols[i]:
+                is_active = i == 0
+                
+                if i > 0:
+                    prev_col = filter_order[i-1]
+                    if (st.session_state.get(f"filter_{prev_col}") or
+                        st.session_state.get(f"search_{prev_col}") or
+                        st.session_state.get(f"multiselect_{prev_col}")):
+                        is_active = True
 
-            unique_values = df_filtered[column].dropna().unique()
-            
-            if is_active:
-                if column in ["Product Description", "Description"]:
-                    filter_mode = st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], key=f"mode_{column}")
-                    if filter_mode == "Search by Text":
-                        search_term = st.text_input(f"Search {column}", key=f"search_{column}")
-                        if search_term:
-                            df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
+                unique_values = df_filtered[column].dropna().unique()
+                
+                if is_active:
+                    if column in ["Product Description", "Description"]:
+                        filter_mode = st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], key=f"mode_{column}")
+                        if filter_mode == "Search by Text":
+                            search_term = st.text_input(f"Search {column}", key=f"search_{column}")
+                            if search_term:
+                                df_filtered = df_filtered[df_filtered[column].str.contains(search_term, case=False, na=False)]
+                        else:
+                            selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
+                            if selected_values:
+                                df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
                     else:
-                        selected_values = st.multiselect(f"Select {column} values", list(unique_values), key=f"multiselect_{column}")
+                        selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
                         if selected_values:
                             df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
                 else:
-                    selected_values = st.multiselect(f"By {column}", list(unique_values), key=f"filter_{column}")
-                    if selected_values:
-                        df_filtered = df_filtered[df_filtered[column].isin(selected_values)]
-            else:
-                if column in ["Product Description", "Description"]:
-                    st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
-                else:
-                    st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
+                    if column in ["Product Description", "Description"]:
+                        st.selectbox(f"Filter {column} by:", ["Search by Text", "Select from List"], disabled=True, key=f"mode_{column}")
+                    else:
+                        st.multiselect(f"By {column}", [], disabled=True, key=f"filter_{column}")
 
-    # --- Display Filtered Data with Row Selection ---
-    st.header("Filtered Data")
-    
-    # Add a "Select" column to the dataframe
-    df_filtered.insert(0, "Select", False)
+        # --- Display Filtered Data with Row Selection ---
+        st.header("Filtered Data")
+        
+        # Add a "Select" column to the dataframe
+        df_filtered.insert(0, "Select", False)
 
-    # Use data_editor to display the dataframe with checkboxes
-    edited_df = st.data_editor(
-        df_filtered,
-        hide_index=True,
-        column_config={"Select": st.column_config.CheckboxColumn(required=True)},
-        disabled=df_filtered.columns.drop("Select"),
-        key=f"data_editor_{st.session_state.editor_key_version}"
-    )
+        # Use data_editor to display the dataframe with checkboxes
+        edited_df = st.data_editor(
+            df_filtered,
+            hide_index=True,
+            column_config={"Select": st.column_config.CheckboxColumn(required=True)},
+            disabled=df_filtered.columns.drop("Select"),
+            key=f"data_editor_{st.session_state.editor_key_version}"
+        )
 
-    selected_rows = edited_df[edited_df.Select]
+        selected_rows = edited_df[edited_df.Select]
 
-    if not selected_rows.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Add Selected to Order", type="primary"):
-                # Get the selected rows without the "Select" column
-                rows_to_add = selected_rows.drop(columns=["Select"])
-                for index, row in rows_to_add.iterrows():
-                    row_dict = row.to_dict()
-                    row_dict['Quantity'] = 1
-                    row_dict['Price per unit'] = 0.0
-                    row_dict['Hardware DRI'] = ""
-                    row_dict['Location'] = "Cork"
-                    row_dict['1-line Justification'] = ""
-                    row_dict['Approved'] = False
-                    row_dict['Delivered'] = False
-                    row_dict['Transferred'] = False
-                    st.session_state.current_order.append(row_dict)
-                save_current_order()
-                st.success(f"Added {len(rows_to_add)} item(s) to current order.")
-                # Increment the key version to force a reset of the data_editor
-                st.session_state.editor_key_version += 1
-                st.rerun()
-        with col2:
-            if st.button("Clear Selection"):
-                # Increment the key version to force a reset of the data_editor
-                st.session_state.editor_key_version += 1
-                st.rerun()
+        if not selected_rows.empty:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Add Selected to Order", type="primary"):
+                    # Get the selected rows without the "Select" column
+                    rows_to_add = selected_rows.drop(columns=["Select"])
+                    for index, row in rows_to_add.iterrows():
+                        row_dict = row.to_dict()
+                        row_dict['Quantity'] = 1
+                        row_dict['Price per unit'] = 0.0
+                        row_dict['Hardware DRI'] = ""
+                        row_dict['Location'] = "Cork"
+                        row_dict['1-line Justification'] = ""
+                        row_dict['Approved'] = False
+                        row_dict['Delivered'] = False
+                        row_dict['Transferred'] = False
+                        st.session_state.current_order.append(row_dict)
+                    save_current_order()
+                    st.success(f"Added {len(rows_to_add)} item(s) to current order.")
+                    # Increment the key version to force a reset of the data_editor
+                    st.session_state.editor_key_version += 1
+                    st.rerun()
+            with col2:
+                if st.button("Clear Selection"):
+                    # Increment the key version to force a reset of the data_editor
+                    st.session_state.editor_key_version += 1
+                    st.rerun()
 
 with tab2:
     st.header("Original Data")
-    st.dataframe(st.session_state.df)
+    if st.session_state.df.empty:
+        st.info("Please upload a CSV file to see the full data sheet.")
+    else:
+        st.dataframe(st.session_state.df)
 
 with tab3:
     st.header("Price Summary")
