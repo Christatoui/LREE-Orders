@@ -54,6 +54,12 @@ def load_current_order():
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
+        # Robustly handle string columns to prevent type inference issues
+        for col in ["Hardware DRI", "Part", "1-line Justification"]:
+            if col in df.columns:
+                # Fill NaNs with empty strings and convert to string type
+                df[col] = df[col].fillna('').astype(str)
+
         return df.to_dict('records')
     return []
 
