@@ -40,7 +40,11 @@ def save_current_order():
 
 def load_current_order():
     if os.path.exists(CURRENT_ORDER_FILE):
-        return pd.read_csv(CURRENT_ORDER_FILE).to_dict('records')
+        df = pd.read_csv(CURRENT_ORDER_FILE)
+        for col in ["Approved", "Delivered", "Transferred"]:
+            if col in df.columns:
+                df[col] = df[col].astype(bool)
+        return df.to_dict('records')
     return []
 
 def save_past_orders():
