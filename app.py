@@ -317,24 +317,30 @@ with tab3:
                 k: v for k, v in full_column_config.items() if k in order_df.columns or k == "Remove"
             }
 
+            # When the data_editor is changed, its output is the new, edited DataFrame.
+            # We immediately save this back to the session state to make the change persistent.
             edited_order_df = st.data_editor(
-                order_df, column_config=active_column_config,
-                hide_index=True, key="order_editor"
+                order_df,
+                column_config=active_column_config,
+                hide_index=True,
+                key="order_editor"
             )
+            
+            # Update the session state immediately after an edit
+            st.session_state.current_order = edited_order_df.to_dict('records')
 
             # --- Action Buttons ---
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("Remove Selected from Order"):
-                    rows_to_keep = edited_order_df[~edited_order_df.Remove]
-                    st.session_state.current_order = rows_to_keep.drop(columns=["Remove"]).to_dict('records')
+                    rows_to_keep = [row for row in st.session_state.current_order if not row['Remove']]
+                    st.session_state.current_order = rows_to_keep
                     save_current_order()
                     st.rerun()
             with col2:
-                if st.button("Update Order", type="primary"):
-                    st.session_state.current_order = edited_order_df.drop(columns=["Remove"]).to_dict('records')
+                if st.button("Save Changes to CSV", type="primary"):
                     save_current_order()
-                    st.success("Order updated!")
+                    st.success("Order saved to current_order.csv!")
 
             st.header("Archive Order")
             archive_name = st.text_input("Enter a name for this order:")
